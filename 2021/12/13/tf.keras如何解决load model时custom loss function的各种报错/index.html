@@ -20,23 +20,21 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Deep Neural Networks for YouTube Recommendations论文阅读推荐YouTube videos的挑战主要来自三个方面：  scale 需要将推荐算法应用在极大规模场景下  freshness 每秒都有新视频上传。推荐系统应该也要对这些新视频做出足够的响应  noise 因为稀疏性和一系列无法被观察到的外部因素，历史用户行为很难被预测。很难有刻画用户满意度的">
+  <meta name="description" content="本文适用于以下场景（假定model中含有复杂的custom loss function）：  load已训练完成的model，进行infer 模型滚动更新：加载旧模型，在旧模型的基础上进行增量训练得到新模型   运行环境 Tensorflow2.0.0">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Deep Neural Networks for YouTube Recommendations论文阅读">
-<meta property="og:url" content="http://example.com/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:title" content="tf.keras如何解决load model时custom loss function的各种报错">
+<meta property="og:url" content="http://example.com/2021/12/13/tf.keras%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3load%20model%E6%97%B6custom%20loss%20function%E7%9A%84%E5%90%84%E7%A7%8D%E6%8A%A5%E9%94%99/index.html">
 <meta property="og:site_name" content="TianduAI">
-<meta property="og:description" content="Deep Neural Networks for YouTube Recommendations论文阅读推荐YouTube videos的挑战主要来自三个方面：  scale 需要将推荐算法应用在极大规模场景下  freshness 每秒都有新视频上传。推荐系统应该也要对这些新视频做出足够的响应  noise 因为稀疏性和一系列无法被观察到的外部因素，历史用户行为很难被预测。很难有刻画用户满意度的">
+<meta property="og:description" content="本文适用于以下场景（假定model中含有复杂的custom loss function）：  load已训练完成的model，进行infer 模型滚动更新：加载旧模型，在旧模型的基础上进行增量训练得到新模型   运行环境 Tensorflow2.0.0">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/01.png">
-<meta property="article:published_time" content="2020-11-27T09:54:55.000Z">
-<meta property="article:modified_time" content="2021-12-12T03:36:17.724Z">
+<meta property="article:published_time" content="2021-12-13T14:46:16.000Z">
+<meta property="article:modified_time" content="2021-12-22T16:03:09.349Z">
 <meta property="article:author" content="David Liu">
-<meta property="article:tag" content="CTR">
-<meta property="article:tag" content="Recommendation">
+<meta property="article:tag" content="Tensorflow">
+<meta property="article:tag" content="Keras">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/01.png">
 
-<link rel="canonical" href="http://example.com/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/">
+<link rel="canonical" href="http://example.com/2021/12/13/tf.keras%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3load%20model%E6%97%B6custom%20loss%20function%E7%9A%84%E5%90%84%E7%A7%8D%E6%8A%A5%E9%94%99/">
 
 
 <script id="page-configurations">
@@ -49,7 +47,7 @@
   };
 </script>
 
-  <title>Deep Neural Networks for YouTube Recommendations论文阅读 | TianduAI</title>
+  <title>tf.keras如何解决load model时custom loss function的各种报错 | TianduAI</title>
   
 
 
@@ -170,7 +168,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2021/12/13/tf.keras%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3load%20model%E6%97%B6custom%20loss%20function%E7%9A%84%E5%90%84%E7%A7%8D%E6%8A%A5%E9%94%99/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/personal.jpeg">
@@ -183,7 +181,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Deep Neural Networks for YouTube Recommendations论文阅读
+          tf.keras如何解决load model时custom loss function的各种报错
         </h1>
 
         <div class="post-meta">
@@ -193,14 +191,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2020-11-27 17:54:55" itemprop="dateCreated datePublished" datetime="2020-11-27T17:54:55+08:00">2020-11-27</time>
+              <time title="创建时间：2021-12-13 22:46:16" itemprop="dateCreated datePublished" datetime="2021-12-13T22:46:16+08:00">2021-12-13</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-12-12 11:36:17" itemprop="dateModified" datetime="2021-12-12T11:36:17+08:00">2021-12-12</time>
+                <time title="修改时间：2021-12-23 00:03:09" itemprop="dateModified" datetime="2021-12-23T00:03:09+08:00">2021-12-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -208,7 +206,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/CTR-prediction/" itemprop="url" rel="index"><span itemprop="name">CTR prediction</span></a>
+                  <a href="/categories/Tensorflow/" itemprop="url" rel="index"><span itemprop="name">Tensorflow</span></a>
                 </span>
             </span>
 
@@ -218,14 +216,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2k</span>
+              <span>2.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
+              <span>6 分钟</span>
             </span>
 
         </div>
@@ -237,46 +235,39 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="Deep-Neural-Networks-for-YouTube-Recommendations论文阅读"><a href="#Deep-Neural-Networks-for-YouTube-Recommendations论文阅读" class="headerlink" title="Deep Neural Networks for YouTube Recommendations论文阅读"></a>Deep Neural Networks for YouTube Recommendations论文阅读</h2><p>推荐YouTube videos的挑战主要来自三个方面：</p>
+        <blockquote>
+<p>本文适用于以下场景（假定<code>model</code>中含有复杂的<code>custom loss function</code>）：</p>
 <ul>
-<li><p>scale</p>
-<p>需要将推荐算法应用在极大规模场景下</p>
-</li>
-<li><p>freshness</p>
-<p>每秒都有新视频上传。推荐系统应该也要对这些新视频做出足够的响应</p>
-</li>
-<li><p>noise</p>
-<p>因为稀疏性和一系列无法被观察到的外部因素，历史用户行为很难被预测。很难有刻画用户满意度的ground truth，所以模型是对含有噪音的隐式反馈信息建模。所以算法应该要对训练数据集中的这些特征具有鲁棒性。</p>
-</li>
+<li><code>load</code>已训练完成的<code>model</code>，进行<code>infer</code></li>
+<li>模型滚动更新：加载旧模型，在旧模型的基础上进行增量训练得到新模型</li>
+</ul>
+</blockquote>
+<h4 id="运行环境"><a href="#运行环境" class="headerlink" title="运行环境"></a>运行环境</h4><ul>
+<li><code>Tensorflow2.0.0</code></li>
 </ul>
 <span id="more"></span>
 
-<p>系统架构</p>
-<img src="01.png" width="600" height="400" alt="系统架构" align=center />
+<h4 id="定义custom-loss-function"><a href="#定义custom-loss-function" class="headerlink" title="定义custom loss function"></a>定义<code>custom loss function</code></h4><ul>
+<li><p>这里定义的是<code>pairwise</code>场景下<code>binary crossentropy</code>的<code>loss function</code>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pairwise_binary_crossentropy</span>(<span class="params">query</span>):</span></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    pairwise_binary_crossentropy, each pair example uses binary crossentropy as loss.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query: query id</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">y_true, y_pred</span>):</span></span><br><span class="line">        pair_mask = tf.equal(query, tf.transpose(query))</span><br><span class="line">        pair_mask = tf.cast(pair_mask, tf.float32)</span><br><span class="line">  </span><br><span class="line">        <span class="comment">#根据pair_mask创建对角矩阵。 </span></span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(tf.ones_like(pair_mask), -<span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(pair_mask_diag, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag_reverse = <span class="number">1</span> - pair_mask_diag</span><br><span class="line">  </span><br><span class="line">        pair_mask = pair_mask * pair_mask_diag_reverse</span><br><span class="line">  </span><br><span class="line">        si_minus_sj = y_pred - tf.transpose(y_pred)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = y_true - tf.transpose(y_true)</span><br><span class="line">        yi_minus_yj = tf.maximum(tf.minimum(<span class="number">1.</span>, yi_minus_yj), -<span class="number">1.</span>)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = <span class="number">0.5</span> * (<span class="number">1</span> + yi_minus_yj)</span><br><span class="line">  </span><br><span class="line">        logloss = tf.nn.sigmoid_cross_entropy_with_logits(labels=yi_minus_yj, logits=si_minus_sj)</span><br><span class="line">  </span><br><span class="line">        num_pairs = tf.reduce_sum(pair_mask)</span><br><span class="line">  </span><br><span class="line">        loss = pair_mask * logloss</span><br><span class="line">        loss = tf.reduce_sum(loss)</span><br><span class="line">        res = loss / (num_pairs + <span class="number">0.00001</span>)</span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> res</span><br><span class="line">    <span class="keyword">return</span> loss</span><br></pre></td></tr></table></figure>
 
-<p>召回层通过CF只提供了粗粒度的个性化结果。用户之间的相似度利用例如观看视频ID、搜索词、人口特征等计算。</p>
-<p>排序层是根据丰富的视频及用户信息，计算候选列表中每一个视频的分数，排序后个数最高的视频展现给用户。</p>
-<h4 id="召回层"><a href="#召回层" class="headerlink" title="召回层"></a>召回层</h4><p>将视频库中的视频限制到了几百量级。这里训练采用的是基于rank loss的矩阵分解方法。</p>
-<ul>
-<li><p>Recommendation as classification</p>
-<p>将预测问题看成为一个有着极多类别的分类问题，即精确的从百万量级的视频(每个视频看成为一类)中分类出被观看视频所代表的类别，特征基于用户行为U及context，采用softmax分类函数。</p>
-<p>![image-20210118202900821](/Users/david/Library/Application Support/typora-user-images/image-20210118202900821.png)</p>
-<p>深度神经网络的任务是学习到user embeddings，作为用户历史和上下文的函数。</p>
-<p>YouTube采用了隐式反馈训练模型，具体来说就是将用户完播一个视频看成正样本。YouTube没有用显式反馈来建模的原因是显式反馈数据实在是太稀疏了。</p>
+<p>可以看出，这里不仅仅是<code>loss_function(y_true, y_pred)</code>形式了，而是最外层还有<code>query</code>这个输入。</p>
 </li>
 </ul>
-<p><em>如何将这么多类别的分类问题变得有效率？</em></p>
-<p>Step1 负采样</p>
-<p>Step2 importance weighting来修正采样</p>
-<p>在实践中，负样本采样到几千个，将传统的softmax计算过程加速了100倍。一个比较流行的方法是hierarchical softmax，但是youtube并没有得到相应的准确率。在分层softmax中，遍历树中的每个节点都涉及到区分通常不相关的类集，从而使分类问题更加困难和降低性能。</p>
-<p>从百万item中计算TOPN个物品，延迟还需要在10毫秒量级。YouTube之前的系统依赖hash方法。现在，因为不需要softmax输出层标准的似然函数，所以打分问题退化为在点积空间搜索最近邻居节点问题。在A/B实验中，最终的结果对最近邻居节点搜索算法也并不敏感。这里为什么可以退化为在点积空间寻找最近邻问题呢？因为softmax函数分母可以看成常数，所以分子中指数的次方项越大，最后的分数越大，也就等同于点积最大。</p>
-<h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><p>一个用户的观看历史可以被观看序列表示，该序列的大小是固定的。然后根据这个序列，利用embedding转换为稠密向量。池化采用平均池化，其余池化如sum、component-wise、max等均没有平均池化效果好，不过在具体场景中采用什么池化也是需要经过试验验证的。embedding参数是与其他参数一起，通过正常的梯度下降算法训练出来的。</p>
-<p>![image-20210118210439553](/Users/david/Library/Application Support/typora-user-images/image-20210118210439553.png)</p>
-<h4 id="Heterogeneous-Signals"><a href="#Heterogeneous-Signals" class="headerlink" title="Heterogeneous Signals"></a>Heterogeneous Signals</h4><p>用户的搜索历史同观看历史一样，每一个搜索词被标记为一元词组或者二元词组，然后将每个标记embedding成向量。然后将所有的标记取平均，最终的向量就可以表示用户的搜索历史了。人口统计学特征对新用户很有用。用户的地理信息、设备信息也被embedding，然后concat到一起。一些简单的二值特征比如用户的性别、登录状态以及一些连续特征如年龄等直接被喂入模型。</p>
-<p>“样本年龄”特征</p>
-<p>YouTube研究人员持续观察到：用户更喜欢新鲜的内容，尽管并不是很相关。机器学习系统是有偏的，因为模型是利用用户历史数据去预测未来行为的。视频流行度的分布是高度不标准的，但是推荐系统推荐的结果是训练窗口中视频被观看的平均似然值。所以，增加了example age这个特征去训练，结果表明可以很好的刻画视频流行度的分布。</p>
-<p>在机器学习问题中，不直接对目标建模，而是对目标相关的指标建模，反而可能达到更好的效果。例如：电影推荐可以通过预估打分来完成 ；在这个应用中，可以用观看时长来预估点击；再例如，点击率预估可以通过对停留时间建模实现。</p>
-<p>YouTube的训练数据来自YouTube所有的观看视频，而不仅仅是推荐系统推荐的。否则，新视频很难被曝光，推荐系统也容易有偏。对每个用户固定训练样本，让每个用户在loss function中有一样的权重，来防止头部用户在loss中产生主导。</p>
+<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
+<li><p><strong>对于利用<code>tf.keras.models.load_model()</code>加载模型，然后直接输入测试数据进行<code>infer</code>的场景</strong></p>
+<p>此时若不调用<code>model.compile()</code>进行编译的话，是会报错的，无法得到<code>prediction</code>。而将<code>custom loss function</code>传入<code>model.compile(loss=)</code>中<code>loss</code>参数的话，报的错更是千奇百怪。<strong>我们只需要给<code>loss</code>传入任意一个 keras 提供的 <code>loss function</code>，如 <code>binary_crossentropy</code> 即可。如<code>model.compile(loss=tensorflow.keras.losses.binary_crossentropy)</code>。</strong> </p>
+<p>因为 infer 时就是 network 的前向传播计算过程，与 loss 的具体形式无关，只与网络结构与权重有关。所以，即使随机指定 loss 形式，只要<code>model.compile()</code>通过即可。经实测，不同的<code>loss function</code> 形式确实不会影响最终的<code>prediction</code>结果。不放心的小伙伴可以自己尝试。</p>
+</li>
+<li><p><strong>对于模型滚动更新场景</strong></p>
+<p>按常理说，模型滚动更新的步骤应该是这样的：1.加载模型，得到基准模型对象<code>model</code>；2.读取训练数据，利用基准模型对象，调用<code>model.fit()</code>接口，进行模型增量训练。</p>
+<p>理想很美好，现实很骨感。上述做法中，<strong>必须先调用<code>model.compile()</code>指定<code>loss</code>以及<code>optimizer</code>后，才可以正常的调用<code>model.fit()</code>，执行后续的训练流程。</strong></p>
+<p>好，现在又绕回来了。只要调用<code>model.compile()</code>，就逃不过<code>model.compile(loss=xxx)</code>中<code>custom loss function</code>如何正确传入的问题。<strong>这里与infer场景不同，是无法随意传入<code>loss function</code>让其compile通过即可，而是一定要指定自定义的<code>custom loss function</code>，因为模型滚动更新时训练需要利用自定义的<code>custom loss function</code>训练更新权重。</strong></p>
+<p>「Restore 模型后得到基准模型对象，并在此基础上调用fit接口进行训练」这条路已经走到死胡同了，那我们不妨退出来再看看有什么可以“曲线救国”的方法。</p>
+<p>明确一点：模型更新的实质是什么？模型更新的实质是<strong>参数的更新</strong>。那么模型滚动更新的实质是什么？其实质是<strong>在现有模型的参数基础上增量更新</strong>。</p>
+<p>所以，我们只要从0构建与基准模型拥有完全相同结构的网络，并将基准模型的权重赋值给新构建的网络，再调用fit接口就可以实现模型增量更新的功能。</p>
+</li>
+</ul>
 
     </div>
 
@@ -286,8 +277,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/CTR/" rel="tag"># CTR</a>
-              <a href="/tags/Recommendation/" rel="tag"># Recommendation</a>
+              <a href="/tags/Tensorflow/" rel="tag"># Tensorflow</a>
+              <a href="/tags/Keras/" rel="tag"># Keras</a>
           </div>
 
         
@@ -295,11 +286,11 @@
 
         
     <div class="post-nav">
-      <div class="post-nav-item"></div>
       <div class="post-nav-item">
-    <a href="/2021/11/29/hello-world/" rel="next" title="Hello World">
-      Hello World <i class="fa fa-chevron-right"></i>
+    <a href="/2021/11/29/hello-world/" rel="prev" title="Hello World">
+      <i class="fa fa-chevron-left"></i> Hello World
     </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -358,7 +349,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Deep-Neural-Networks-for-YouTube-Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB"><span class="nav-number">1.</span> <span class="nav-text">Deep Neural Networks for YouTube Recommendations论文阅读</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%AC%E5%9B%9E%E5%B1%82"><span class="nav-number">1.0.1.</span> <span class="nav-text">召回层</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84"><span class="nav-number">1.0.2.</span> <span class="nav-text">模型结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Heterogeneous-Signals"><span class="nav-number">1.0.3.</span> <span class="nav-text">Heterogeneous Signals</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">运行环境</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89custom-loss-function"><span class="nav-number">2.</span> <span class="nav-text">定义custom loss function</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-number">3.</span> <span class="nav-text">解决方案</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 

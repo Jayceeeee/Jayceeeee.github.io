@@ -1,26 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Hello World</title>
-    <url>/2021/11/29/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<span id="more"></span>
-
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
-  </entry>
-  <entry>
     <title>Deep Neural Networks for YouTube Recommendations论文阅读</title>
     <url>/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</url>
     <content><![CDATA[<h2 id="Deep-Neural-Networks-for-YouTube-Recommendations论文阅读"><a href="#Deep-Neural-Networks-for-YouTube-Recommendations论文阅读" class="headerlink" title="Deep Neural Networks for YouTube Recommendations论文阅读"></a>Deep Neural Networks for YouTube Recommendations论文阅读</h2><p>推荐YouTube videos的挑战主要来自三个方面：</p>
@@ -64,9 +44,77 @@
 <p>在机器学习问题中，不直接对目标建模，而是对目标相关的指标建模，反而可能达到更好的效果。例如：电影推荐可以通过预估打分来完成 ；在这个应用中，可以用观看时长来预估点击；再例如，点击率预估可以通过对停留时间建模实现。</p>
 <p>YouTube的训练数据来自YouTube所有的观看视频，而不仅仅是推荐系统推荐的。否则，新视频很难被曝光，推荐系统也容易有偏。对每个用户固定训练样本，让每个用户在loss function中有一样的权重，来防止头部用户在loss中产生主导。</p>
 ]]></content>
+      <categories>
+        <category>CTR prediction</category>
+      </categories>
       <tags>
-        <tag>CTR prediction</tag>
-        <tag>DNN</tag>
+        <tag>CTR</tag>
+        <tag>Recommendation</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2021/11/29/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<span id="more"></span>
+
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>tf.keras如何解决load model时custom loss function的各种报错</title>
+    <url>/2021/12/13/tf.keras%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3load%20model%E6%97%B6custom%20loss%20function%E7%9A%84%E5%90%84%E7%A7%8D%E6%8A%A5%E9%94%99/</url>
+    <content><![CDATA[<blockquote>
+<p>本文适用于以下场景（假定<code>model</code>中含有复杂的<code>custom loss function</code>）：</p>
+<ul>
+<li><code>load</code>已训练完成的<code>model</code>，进行<code>infer</code></li>
+<li>模型滚动更新：加载旧模型，在旧模型的基础上进行增量训练得到新模型</li>
+</ul>
+</blockquote>
+<h4 id="运行环境"><a href="#运行环境" class="headerlink" title="运行环境"></a>运行环境</h4><ul>
+<li><code>Tensorflow2.0.0</code></li>
+</ul>
+<span id="more"></span>
+
+<h4 id="定义custom-loss-function"><a href="#定义custom-loss-function" class="headerlink" title="定义custom loss function"></a>定义<code>custom loss function</code></h4><ul>
+<li><p>这里定义的是<code>pairwise</code>场景下<code>binary crossentropy</code>的<code>loss function</code>：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pairwise_binary_crossentropy</span>(<span class="params">query</span>):</span></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    pairwise_binary_crossentropy, each pair example uses binary crossentropy as loss.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query: query id</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">y_true, y_pred</span>):</span></span><br><span class="line">        pair_mask = tf.equal(query, tf.transpose(query))</span><br><span class="line">        pair_mask = tf.cast(pair_mask, tf.float32)</span><br><span class="line">  </span><br><span class="line">        <span class="comment">#根据pair_mask创建对角矩阵。 </span></span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(tf.ones_like(pair_mask), -<span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(pair_mask_diag, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag_reverse = <span class="number">1</span> - pair_mask_diag</span><br><span class="line">  </span><br><span class="line">        pair_mask = pair_mask * pair_mask_diag_reverse</span><br><span class="line">  </span><br><span class="line">        si_minus_sj = y_pred - tf.transpose(y_pred)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = y_true - tf.transpose(y_true)</span><br><span class="line">        yi_minus_yj = tf.maximum(tf.minimum(<span class="number">1.</span>, yi_minus_yj), -<span class="number">1.</span>)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = <span class="number">0.5</span> * (<span class="number">1</span> + yi_minus_yj)</span><br><span class="line">  </span><br><span class="line">        logloss = tf.nn.sigmoid_cross_entropy_with_logits(labels=yi_minus_yj, logits=si_minus_sj)</span><br><span class="line">  </span><br><span class="line">        num_pairs = tf.reduce_sum(pair_mask)</span><br><span class="line">  </span><br><span class="line">        loss = pair_mask * logloss</span><br><span class="line">        loss = tf.reduce_sum(loss)</span><br><span class="line">        res = loss / (num_pairs + <span class="number">0.00001</span>)</span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> res</span><br><span class="line">    <span class="keyword">return</span> loss</span><br></pre></td></tr></table></figure>
+
+<p>可以看出，这里不仅仅是<code>loss_function(y_true, y_pred)</code>形式了，而是最外层还有<code>query</code>这个输入。</p>
+</li>
+</ul>
+<h4 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h4><ul>
+<li><p><strong>对于利用<code>tf.keras.models.load_model()</code>加载模型，然后直接输入测试数据进行<code>infer</code>的场景</strong></p>
+<p>此时若不调用<code>model.compile()</code>进行编译的话，是会报错的，无法得到<code>prediction</code>。而将<code>custom loss function</code>传入<code>model.compile(loss=)</code>中<code>loss</code>参数的话，报的错更是千奇百怪。<strong>我们只需要给<code>loss</code>传入任意一个 keras 提供的 <code>loss function</code>，如 <code>binary_crossentropy</code> 即可。如<code>model.compile(loss=tensorflow.keras.losses.binary_crossentropy)</code>。</strong> </p>
+<p>因为 infer 时就是 network 的前向传播计算过程，与 loss 的具体形式无关，只与网络结构与权重有关。所以，即使随机指定 loss 形式，只要<code>model.compile()</code>通过即可。经实测，不同的<code>loss function</code> 形式确实不会影响最终的<code>prediction</code>结果。不放心的小伙伴可以自己尝试。</p>
+</li>
+<li><p><strong>对于模型滚动更新场景</strong></p>
+<p>按常理说，模型滚动更新的步骤应该是这样的：1.加载模型，得到基准模型对象<code>model</code>；2.读取训练数据，利用基准模型对象，调用<code>model.fit()</code>接口，进行模型增量训练。</p>
+<p>理想很美好，现实很骨感。上述做法中，<strong>必须先调用<code>model.compile()</code>指定<code>loss</code>以及<code>optimizer</code>后，才可以正常的调用<code>model.fit()</code>，执行后续的训练流程。</strong></p>
+<p>好，现在又绕回来了。只要调用<code>model.compile()</code>，就逃不过<code>model.compile(loss=xxx)</code>中<code>custom loss function</code>如何正确传入的问题。<strong>这里与infer场景不同，是无法随意传入<code>loss function</code>让其compile通过即可，而是一定要指定自定义的<code>custom loss function</code>，因为模型滚动更新时训练需要利用自定义的<code>custom loss function</code>训练更新权重。</strong></p>
+<p>「Restore 模型后得到基准模型对象，并在此基础上调用fit接口进行训练」这条路已经走到死胡同了，那我们不妨退出来再看看有什么可以“曲线救国”的方法。</p>
+<p>明确一点：模型更新的实质是什么？模型更新的实质是<strong>参数的更新</strong>。那么模型滚动更新的实质是什么？其实质是<strong>在现有模型的参数基础上增量更新</strong>。</p>
+<p>所以，我们只要从0构建与基准模型拥有完全相同结构的网络，并将基准模型的权重赋值给新构建的网络，再调用fit接口就可以实现模型增量更新的功能。</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Keras</tag>
       </tags>
   </entry>
 </search>
