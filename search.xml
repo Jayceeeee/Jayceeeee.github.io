@@ -16,17 +16,15 @@
 </li>
 </ul>
 <span id="more"></span>
-
 <p>系统架构</p>
-<img src="01.png" width="600" height="400" alt="系统架构" align=center />
-
+<p><img src="01.png" width="600" height="400" alt="系统架构" align=center /></p>
 <p>召回层通过CF只提供了粗粒度的个性化结果。用户之间的相似度利用例如观看视频ID、搜索词、人口特征等计算。</p>
 <p>排序层是根据丰富的视频及用户信息，计算候选列表中每一个视频的分数，排序后个数最高的视频展现给用户。</p>
 <h4 id="召回层"><a href="#召回层" class="headerlink" title="召回层"></a>召回层</h4><p>将视频库中的视频限制到了几百量级。这里训练采用的是基于rank loss的矩阵分解方法。</p>
 <ul>
 <li><p>Recommendation as classification</p>
 <p>将预测问题看成为一个有着极多类别的分类问题，即精确的从百万量级的视频(每个视频看成为一类)中分类出被观看视频所代表的类别，特征基于用户行为U及context，采用softmax分类函数。</p>
-<p>![image-20210118202900821](/Users/david/Library/Application Support/typora-user-images/image-20210118202900821.png)</p>
+<p><img src="/Users/david/Library/Application Support/typora-user-images/image-20210118202900821.png" alt="image-20210118202900821"></p>
 <p>深度神经网络的任务是学习到user embeddings，作为用户历史和上下文的函数。</p>
 <p>YouTube采用了隐式反馈训练模型，具体来说就是将用户完播一个视频看成正样本。YouTube没有用显式反馈来建模的原因是显式反馈数据实在是太稀疏了。</p>
 </li>
@@ -37,7 +35,7 @@
 <p>在实践中，负样本采样到几千个，将传统的softmax计算过程加速了100倍。一个比较流行的方法是hierarchical softmax，但是youtube并没有得到相应的准确率。在分层softmax中，遍历树中的每个节点都涉及到区分通常不相关的类集，从而使分类问题更加困难和降低性能。</p>
 <p>从百万item中计算TOPN个物品，延迟还需要在10毫秒量级。YouTube之前的系统依赖hash方法。现在，因为不需要softmax输出层标准的似然函数，所以打分问题退化为在点积空间搜索最近邻居节点问题。在A/B实验中，最终的结果对最近邻居节点搜索算法也并不敏感。这里为什么可以退化为在点积空间寻找最近邻问题呢？因为softmax函数分母可以看成常数，所以分子中指数的次方项越大，最后的分数越大，也就等同于点积最大。</p>
 <h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><p>一个用户的观看历史可以被观看序列表示，该序列的大小是固定的。然后根据这个序列，利用embedding转换为稠密向量。池化采用平均池化，其余池化如sum、component-wise、max等均没有平均池化效果好，不过在具体场景中采用什么池化也是需要经过试验验证的。embedding参数是与其他参数一起，通过正常的梯度下降算法训练出来的。</p>
-<p>![image-20210118210439553](/Users/david/Library/Application Support/typora-user-images/image-20210118210439553.png)</p>
+<p><img src="/Users/david/Library/Application Support/typora-user-images/image-20210118210439553.png" alt="image-20210118210439553"></p>
 <h4 id="Heterogeneous-Signals"><a href="#Heterogeneous-Signals" class="headerlink" title="Heterogeneous Signals"></a>Heterogeneous Signals</h4><p>用户的搜索历史同观看历史一样，每一个搜索词被标记为一元词组或者二元词组，然后将每个标记embedding成向量。然后将所有的标记取平均，最终的向量就可以表示用户的搜索历史了。人口统计学特征对新用户很有用。用户的地理信息、设备信息也被embedding，然后concat到一起。一些简单的二值特征比如用户的性别、登录状态以及一些连续特征如年龄等直接被喂入模型。</p>
 <p>“样本年龄”特征</p>
 <p>YouTube研究人员持续观察到：用户更喜欢新鲜的内容，尽管并不是很相关。机器学习系统是有偏的，因为模型是利用用户历史数据去预测未来行为的。视频流行度的分布是高度不标准的，但是推荐系统推荐的结果是训练窗口中视频被观看的平均似然值。所以，增加了example age这个特征去训练，结果表明可以很好的刻画视频流行度的分布。</p>
@@ -50,6 +48,75 @@
       <tags>
         <tag>CTR</tag>
         <tag>Recommendation</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Python动态引入包</title>
+    <url>/2022/01/09/Python%E5%8A%A8%E6%80%81%E5%BC%95%E5%85%A5%E5%8C%85/</url>
+    <content><![CDATA[<p>考虑有这样一个场景：你需要根据入参的不同去引入不同层级下的<code>util</code>模块，比如，入参<code>folder=v1</code>，需要引入<code>./v1/util.py</code>，入参folder=<code>v2</code>，需要引入<code>./v2/util.py</code>。<strong>如何利用一行代码就可以实现根据不同的入参来动态引入不同目录下的模块呢？</strong></p>
+<span id="more"></span>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> importlib</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入python第三方包</span></span><br><span class="line">np = importlib.import_module(<span class="string">&quot;numpy&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(np.random.random((<span class="number">2</span>, <span class="number">3</span>)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入模块</span></span><br><span class="line">util = importlib.import_module(<span class="string">&quot;./&#123;&#125;/util&quot;</span>.<span class="built_in">format</span>(folder))</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Tensorflow实现cosine similarity</title>
+    <url>/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/</url>
+    <content><![CDATA[<blockquote>
+<p>一种简单优雅的实现方法</p>
+</blockquote>
+<h4 id="余弦相似度计算公式"><a href="#余弦相似度计算公式" class="headerlink" title="余弦相似度计算公式"></a>余弦相似度计算公式</h4><p>$ cos(\vec x,\vec y)=\frac{&lt;\vec x,\vec y&gt;}{|\vec x| |\vec y|} $</p>
+<h4 id="最直观实现方式"><a href="#最直观实现方式" class="headerlink" title="最直观实现方式"></a>最直观实现方式</h4><p>设<code>user_side_representation</code>与<code>item_side_representation</code>的<code>shape=[None, 4]</code>，其中<code>None</code>表示<code>batch_size</code>，4表示<code>embedding_size</code>。</p>
+<p>计算<code>user_side_representation</code>与<code>item_side_representation</code>两者的<code>cosine similarity</code>最直观的实现方式为：<br>1）求<code>user_side_representation</code>与<code>item_side_representation</code>的内积<code>inner_product</code>;<br>2）分别计算<code>user_side_representation</code>与<code>item_side_representation</code>的<code>L2-norm</code>，<code>norm_user</code>与<code>norm_item</code>;<br>3）计算<code>inner_product / (norm_user*norm_item)</code></p>
+<span id="more"></span>
+<p>以上思路是完全按照余弦相似度计算公式进行的，利用<code>TensorFlow</code>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">user_side_representation_expand = tf.expand_dims(user_side_representation, axis=<span class="number">1</span>)</span><br><span class="line">item_side_representation_expand = tf.expand_dims(item_side_representation, axis=<span class="number">2</span>)</span><br><span class="line">inner_product = tf.matmul(user_side_representation_expand, item_side_representation_expand)</span><br><span class="line"></span><br><span class="line">user_side_representation_norm = tf.sqrt(tf.reduce_sum(tf.square(user_side_representation), axis=<span class="number">1</span>))</span><br><span class="line">item_side_representation_norm = tf.sqrt(tf.reduce_sum(tf.square(item_side_representation), axis=<span class="number">1</span>))</span><br><span class="line">denominoator_norm = tf.expand_dims(user_side_representation_norm * item_side_representation_norm, axis=<span class="number">1</span>)</span><br><span class="line">output = tf.squeeze(inner_product, axis=<span class="number">1</span>) / denominoator_norm</span><br></pre></td></tr></table></figure>
+<p><strong>但是该实现方式有个致命的问题：在训练过程中output或者loss值会出现为nan的情况</strong>。其原因在与<strong><code>tf.sqrt(x)</code>中<code>x</code>过小，导致<code>sqrt()</code>函数输出为<code>nan</code></strong>。最终会导致模型无法正确训练。</p>
+<h4 id="最实用-amp-优雅实现方式"><a href="#最实用-amp-优雅实现方式" class="headerlink" title="最实用&amp;优雅实现方式"></a>最实用&amp;优雅实现方式</h4><p>既然<code>tf.sqrt</code>函数存在输出为<code>nan</code>的问题，那么我们就要避免使用<code>tf.sqrt</code>函数。</p>
+<p>再来看下余弦相似度计算公式，其实可以进一步变形：</p>
+<p>$ cos(\vec x,\vec y)=\frac{&lt;\vec x,\vec y&gt;}{|\vec x| |\vec y|}=&lt;\vec e_x, \vec e_y&gt; $​</p>
+<p>我们直接计算$\vec x$与$\vec y$​两个向量方向上的单位向量的内积就可以了，这样不需要使用<code>tf.sqrt</code>函数。</p>
+<p>利用<code>TensorFlow</code>实现如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">user_side_representation_l2norm = tf.nn.l2_normalize(user_side_representation, axis=<span class="number">1</span>)</span><br><span class="line">item_side_representation_l2norm = tf.nn.l2_normalize(item_side_representation, axis=<span class="number">1</span>)</span><br><span class="line">inner_product = tf.reduce_sum(user_side_representation_l2norm * item_side_representation_l2norm, axis=<span class="number">1</span>)</span><br><span class="line">output = tf.clip_by_value(inner_product, clip_value_min=-<span class="number">1.0</span>, clip_value_max=<span class="number">1.0</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>利用<code>TensorFlow</code>计算余弦相似度，计算两向量的单位向量的内积即可。</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>tf.Print()用法</title>
+    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
+<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
+<span id="more"></span>
+<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
+<ul>
+<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
+<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
+</ul>
+<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
+<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
+<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
+<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
+<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Debug</tag>
       </tags>
   </entry>
   <entry>
@@ -66,11 +133,9 @@
 <li><code>Tensorflow2.0.0</code></li>
 </ul>
 <span id="more"></span>
-
 <h4 id="定义custom-loss-function"><a href="#定义custom-loss-function" class="headerlink" title="定义custom loss function"></a>定义<code>custom loss function</code></h4><ul>
 <li><p>这里定义的是<code>pairwise</code>场景下<code>binary crossentropy</code>的<code>loss function</code>：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pairwise_binary_crossentropy</span>(<span class="params">query</span>):</span></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    pairwise_binary_crossentropy, each pair example uses binary crossentropy as loss.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query: query id</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">y_true, y_pred</span>):</span></span><br><span class="line">        pair_mask = tf.equal(query, tf.transpose(query))</span><br><span class="line">        pair_mask = tf.cast(pair_mask, tf.float32)</span><br><span class="line">  </span><br><span class="line">        <span class="comment">#根据pair_mask创建对角矩阵。 </span></span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(tf.ones_like(pair_mask), -<span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(pair_mask_diag, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag_reverse = <span class="number">1</span> - pair_mask_diag</span><br><span class="line">  </span><br><span class="line">        pair_mask = pair_mask * pair_mask_diag_reverse</span><br><span class="line">  </span><br><span class="line">        si_minus_sj = y_pred - tf.transpose(y_pred)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = y_true - tf.transpose(y_true)</span><br><span class="line">        yi_minus_yj = tf.maximum(tf.minimum(<span class="number">1.</span>, yi_minus_yj), -<span class="number">1.</span>)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = <span class="number">0.5</span> * (<span class="number">1</span> + yi_minus_yj)</span><br><span class="line">  </span><br><span class="line">        logloss = tf.nn.sigmoid_cross_entropy_with_logits(labels=yi_minus_yj, logits=si_minus_sj)</span><br><span class="line">  </span><br><span class="line">        num_pairs = tf.reduce_sum(pair_mask)</span><br><span class="line">  </span><br><span class="line">        loss = pair_mask * logloss</span><br><span class="line">        loss = tf.reduce_sum(loss)</span><br><span class="line">        res = loss / (num_pairs + <span class="number">0.00001</span>)</span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> res</span><br><span class="line">    <span class="keyword">return</span> loss</span><br></pre></td></tr></table></figure>
-
 <p>可以看出，这里不仅仅是<code>loss_function(y_true, y_pred)</code>形式了，而是最外层还有<code>query</code>这个输入。</p>
 </li>
 </ul>

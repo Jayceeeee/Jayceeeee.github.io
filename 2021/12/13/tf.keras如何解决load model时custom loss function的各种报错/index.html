@@ -246,11 +246,9 @@
 <li><code>Tensorflow2.0.0</code></li>
 </ul>
 <span id="more"></span>
-
 <h4 id="定义custom-loss-function"><a href="#定义custom-loss-function" class="headerlink" title="定义custom loss function"></a>定义<code>custom loss function</code></h4><ul>
 <li><p>这里定义的是<code>pairwise</code>场景下<code>binary crossentropy</code>的<code>loss function</code>：</p>
 <figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pairwise_binary_crossentropy</span>(<span class="params">query</span>):</span></span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    pairwise_binary_crossentropy, each pair example uses binary crossentropy as loss.</span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query: query id</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">  </span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">loss</span>(<span class="params">y_true, y_pred</span>):</span></span><br><span class="line">        pair_mask = tf.equal(query, tf.transpose(query))</span><br><span class="line">        pair_mask = tf.cast(pair_mask, tf.float32)</span><br><span class="line">  </span><br><span class="line">        <span class="comment">#根据pair_mask创建对角矩阵。 </span></span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(tf.ones_like(pair_mask), -<span class="number">1</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag = tf.linalg.band_part(pair_mask_diag, <span class="number">0</span>, <span class="number">0</span>)</span><br><span class="line">        pair_mask_diag_reverse = <span class="number">1</span> - pair_mask_diag</span><br><span class="line">  </span><br><span class="line">        pair_mask = pair_mask * pair_mask_diag_reverse</span><br><span class="line">  </span><br><span class="line">        si_minus_sj = y_pred - tf.transpose(y_pred)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = y_true - tf.transpose(y_true)</span><br><span class="line">        yi_minus_yj = tf.maximum(tf.minimum(<span class="number">1.</span>, yi_minus_yj), -<span class="number">1.</span>)</span><br><span class="line">  </span><br><span class="line">        yi_minus_yj = <span class="number">0.5</span> * (<span class="number">1</span> + yi_minus_yj)</span><br><span class="line">  </span><br><span class="line">        logloss = tf.nn.sigmoid_cross_entropy_with_logits(labels=yi_minus_yj, logits=si_minus_sj)</span><br><span class="line">  </span><br><span class="line">        num_pairs = tf.reduce_sum(pair_mask)</span><br><span class="line">  </span><br><span class="line">        loss = pair_mask * logloss</span><br><span class="line">        loss = tf.reduce_sum(loss)</span><br><span class="line">        res = loss / (num_pairs + <span class="number">0.00001</span>)</span><br><span class="line">  </span><br><span class="line">        <span class="keyword">return</span> res</span><br><span class="line">    <span class="keyword">return</span> loss</span><br></pre></td></tr></table></figure>
-
 <p>可以看出，这里不仅仅是<code>loss_function(y_true, y_pred)</code>形式了，而是最外层还有<code>query</code>这个输入。</p>
 </li>
 </ul>
@@ -290,7 +288,10 @@
     <a href="/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="prev" title="Deep Neural Networks for YouTube Recommendations论文阅读">
       <i class="fa fa-chevron-left"></i> Deep Neural Networks for YouTube Recommendations论文阅读
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/" rel="next" title="Tensorflow实现cosine similarity">
+      Tensorflow实现cosine similarity <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -365,20 +366,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">2</span>
+          <span class="site-state-item-count">5</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-count">3</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -416,7 +417,7 @@
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2021</span>
+  <span itemprop="copyrightYear">2022</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
@@ -425,12 +426,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">4k</span>
+    <span title="站点总字数">7k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">11 分钟</span>
+    <span title="站点阅读时长">17 分钟</span>
 </div>
 
 <div>
@@ -490,6 +491,8 @@
 
 
 
+
+  
 
   
 
