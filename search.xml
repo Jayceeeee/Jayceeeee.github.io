@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Python动态引入包</title>
-    <url>/2022/01/09/Python%E5%8A%A8%E6%80%81%E5%BC%95%E5%85%A5%E5%8C%85/</url>
-    <content><![CDATA[<p>考虑有这样一个场景：你需要根据入参的不同去引入不同层级下的<code>util</code>模块，比如，入参<code>folder=v1</code>，需要引入<code>./v1/util.py</code>，入参folder=<code>v2</code>，需要引入<code>./v2/util.py</code>。<strong>如何利用一行代码就可以实现根据不同的入参来动态引入不同目录下的模块呢？</strong></p>
-<span id="more"></span>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> importlib</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入python第三方包</span></span><br><span class="line">np = importlib.import_module(<span class="string">&quot;numpy&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(np.random.random((<span class="number">2</span>, <span class="number">3</span>)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入模块</span></span><br><span class="line">util = importlib.import_module(<span class="string">&quot;./&#123;&#125;/util&quot;</span>.<span class="built_in">format</span>(folder))</span><br></pre></td></tr></table></figure>
-]]></content>
-      <categories>
-        <category>Python</category>
-      </categories>
-      <tags>
-        <tag>Python</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Deep Neural Networks for YouTube Recommendations论文阅读</title>
     <url>/2020/11/27/Deep%20Neural%20Networks%20for%20YouTube%20Recommendations%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</url>
     <content><![CDATA[<h2 id="Deep-Neural-Networks-for-YouTube-Recommendations论文阅读"><a href="#Deep-Neural-Networks-for-YouTube-Recommendations论文阅读" class="headerlink" title="Deep Neural Networks for YouTube Recommendations论文阅读"></a>Deep Neural Networks for YouTube Recommendations论文阅读</h2><p>推荐YouTube videos的挑战主要来自三个方面：</p>
@@ -62,6 +48,20 @@
       <tags>
         <tag>CTR</tag>
         <tag>Recommendation</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Python动态引入包</title>
+    <url>/2022/01/09/Python%E5%8A%A8%E6%80%81%E5%BC%95%E5%85%A5%E5%8C%85/</url>
+    <content><![CDATA[<p>考虑有这样一个场景：你需要根据入参的不同去引入不同层级下的<code>util</code>模块，比如，入参<code>folder=v1</code>，需要引入<code>./v1/util.py</code>，入参folder=<code>v2</code>，需要引入<code>./v2/util.py</code>。<strong>如何利用一行代码就可以实现根据不同的入参来动态引入不同目录下的模块呢？</strong></p>
+<span id="more"></span>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> importlib</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入python第三方包</span></span><br><span class="line">np = importlib.import_module(<span class="string">&quot;numpy&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(np.random.random((<span class="number">2</span>, <span class="number">3</span>)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入模块</span></span><br><span class="line">util = importlib.import_module(<span class="string">&quot;./&#123;&#125;/util&quot;</span>.<span class="built_in">format</span>(folder))</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
       </tags>
   </entry>
   <entry>
