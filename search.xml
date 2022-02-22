@@ -24,7 +24,7 @@
 <ul>
 <li><p>Recommendation as classification</p>
 <p>将预测问题看成为一个有着极多类别的分类问题，即精确的从百万量级的视频(每个视频看成为一类)中分类出被观看视频所代表的类别，特征基于用户行为U及context，采用softmax分类函数。</p>
-<p><img src="/Users/david/Library/Application Support/typora-user-images/image-20210118202900821.png" alt="image-20210118202900821"></p>
+<p><img src="02.png"></p>
 <p>深度神经网络的任务是学习到user embeddings，作为用户历史和上下文的函数。</p>
 <p>YouTube采用了隐式反馈训练模型，具体来说就是将用户完播一个视频看成正样本。YouTube没有用显式反馈来建模的原因是显式反馈数据实在是太稀疏了。</p>
 </li>
@@ -35,7 +35,7 @@
 <p>在实践中，负样本采样到几千个，将传统的softmax计算过程加速了100倍。一个比较流行的方法是hierarchical softmax，但是youtube并没有得到相应的准确率。在分层softmax中，遍历树中的每个节点都涉及到区分通常不相关的类集，从而使分类问题更加困难和降低性能。</p>
 <p>从百万item中计算TOPN个物品，延迟还需要在10毫秒量级。YouTube之前的系统依赖hash方法。现在，因为不需要softmax输出层标准的似然函数，所以打分问题退化为在点积空间搜索最近邻居节点问题。在A/B实验中，最终的结果对最近邻居节点搜索算法也并不敏感。这里为什么可以退化为在点积空间寻找最近邻问题呢？因为softmax函数分母可以看成常数，所以分子中指数的次方项越大，最后的分数越大，也就等同于点积最大。</p>
 <h4 id="模型结构"><a href="#模型结构" class="headerlink" title="模型结构"></a>模型结构</h4><p>一个用户的观看历史可以被观看序列表示，该序列的大小是固定的。然后根据这个序列，利用embedding转换为稠密向量。池化采用平均池化，其余池化如sum、component-wise、max等均没有平均池化效果好，不过在具体场景中采用什么池化也是需要经过试验验证的。embedding参数是与其他参数一起，通过正常的梯度下降算法训练出来的。</p>
-<p><img src="/Users/david/Library/Application Support/typora-user-images/image-20210118210439553.png" alt="image-20210118210439553"></p>
+<p><img src="03.png"></p>
 <h4 id="Heterogeneous-Signals"><a href="#Heterogeneous-Signals" class="headerlink" title="Heterogeneous Signals"></a>Heterogeneous Signals</h4><p>用户的搜索历史同观看历史一样，每一个搜索词被标记为一元词组或者二元词组，然后将每个标记embedding成向量。然后将所有的标记取平均，最终的向量就可以表示用户的搜索历史了。人口统计学特征对新用户很有用。用户的地理信息、设备信息也被embedding，然后concat到一起。一些简单的二值特征比如用户的性别、登录状态以及一些连续特征如年龄等直接被喂入模型。</p>
 <p>“样本年龄”特征</p>
 <p>YouTube研究人员持续观察到：用户更喜欢新鲜的内容，尽管并不是很相关。机器学习系统是有偏的，因为模型是利用用户历史数据去预测未来行为的。视频流行度的分布是高度不标准的，但是推荐系统推荐的结果是训练窗口中视频被观看的平均似然值。所以，增加了example age这个特征去训练，结果表明可以很好的刻画视频流行度的分布。</p>
@@ -160,6 +160,134 @@
       <tags>
         <tag>Tensorflow</tag>
         <tag>Keras</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>一文带你吃透AUC</title>
+    <url>/2022/02/17/%E4%B8%80%E6%96%87%E5%B8%A6%E4%BD%A0%E5%90%83%E9%80%8FAUC/</url>
+    <content><![CDATA[<blockquote>
+<p>本文旨在从所有教科书都讲到的AUC基本概念为起点，逐步带领大家进入AUC背后更为广阔、神奇的世界。</p>
+</blockquote>
+<h4 id="一、什么是AUC"><a href="#一、什么是AUC" class="headerlink" title="一、什么是AUC"></a>一、什么是AUC</h4><p><code>AUC</code>的全称为<code>Area Under the Curve</code>，即曲线下的面积。这里的曲线指的是什么曲线？有两种类型：<strong><code>ROC</code>曲线</strong>和<strong><code>PR</code>曲线</strong>。所以，<code>AUC</code>也会有两种类型：<code>ROCAUC</code>及 <code>PRAUC</code>，分别对应ROC曲线下的面积以及PR曲线的的面积。</p>
+<span id="more"></span>
+<h4 id="二、ROC曲线及PR曲线"><a href="#二、ROC曲线及PR曲线" class="headerlink" title="二、ROC曲线及PR曲线"></a>二、ROC曲线及PR曲线</h4><p>​    在二分类问题中，模型输出得分$S$后（这里的得分指的是<strong>属于正例的概率值</strong>，即经过sigmoid函数归一化到<code>[0,1]</code>内的分数），需要设置一个阈值$T$来决定属于正例还是负例。若$S&gt;T$被判为正例，反之则被判为负例。</p>
+<p>​    最终的预测结果，肯定会出现分类错误的情况。根据样本label以及最终模型预测的结果，可以将最终分类结果分为4种情况：</p>
+<p><strong>a. label为正，模型预测为正： 真正例 TP(True Positive)</strong><br><strong>b. label为正，模型预测为负： 假负例 FN(False Negative)</strong><br><strong>c. label为负，模型预测为正： 假正例 FP(False Positive)</strong><br><strong>d. label为负，模型预测为负： 真负例 TN(True Negative)</strong></p>
+<p>​    按照以下规则会便于分辨与记忆：<strong>正负例指模型最终预测结果，真假指模型是否预测正确。</strong> 所以，举个例子，当计算数据集中正样本的个数为多少时，只需要计算<strong>模型预测为正且预测正确的样本个数+模型预测为负且模型预测错误的样本个数</strong>，按照上述的记忆方法，即$TP+FN$。</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center"></th>
+<th style="text-align:center"><strong>Label=1</strong></th>
+<th style="text-align:center"><strong>Label=0</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><strong>Pred=1</strong></td>
+<td style="text-align:center">TP</td>
+<td style="text-align:center">FP</td>
+</tr>
+<tr>
+<td style="text-align:center"><strong>Pred=0</strong></td>
+<td style="text-align:center">FN</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>​    请大家牢记住上述四种情况，ROC曲线和PR曲线与其息息相关。</p>
+<p>​    <strong>ROC和PR曲线到底与$TP、FP、FN、TN$有什么关系呢？</strong> ROC曲线和PR曲线的差别就在于<strong>两者的横纵坐标轴的含义不一样。</strong> ROC曲线的X轴为<code>FPR(False Positive Rate)</code>，Y轴为<code>TPR(True Positive Rate)</code>。而PR曲线的X轴为<code>Recall</code>，Y轴为<code>Precision</code>。</p>
+<blockquote>
+<p>FPR: 假正例比例。问题是假正例与什么的比例？因为假正例其实是真实的负例的一部分，所以，这里应该是假正例与所有真实负例的比值。于是得到：$FPR=\frac{FP}{TN+FP}$</p>
+<p>TPR: 真正例比例。这里是真正例与所有真实正例的比值。于是得到：$TPR=\frac{TP}{TP+FN}$</p>
+<p>Recall: 召回率。<strong>召回指的是模型预测的真正例占所有正例的比值</strong>，即$Recall=\frac{TP}{TP+FN}$</p>
+<p>Precision: 准确率。<strong>准确率指的是模型预测的真正例占模型预测所有正例的比值</strong>，即$Precision=\frac{TP}{TP+FP}$</p>
+<p><strong>总结：</strong> 召回率和准确率可以通俗的来理解：召回率是模型可以从所有的正例中准确的捞出正例样本的能力，准确率是描述模型准确预测正例的能力。从公式可以看出，真正例比例与召回率的形式完全一样，即$TPR=Recall$。而关于FPR，1-FPR的含义其实就是负例样本的召回率，这点可以想想为什么吗？</p>
+</blockquote>
+<p>&ensp;  ROC曲线及PR曲线的横纵坐标定义好后，曲线的绘制过程一致：将判断正负例的阈值$T$由模型预测得分最小值$S_{min}$至模型预测得分最大值$S_{max}$进行遍历。对于每个时刻的阈值$T_{i}$，计算X轴及Y轴对应的数值，作为这一时刻的坐标。当遍历过程完成后，就会得到ROC曲线或者PR曲线了。</p>
+<p><img src="01.png" width="600" height="400" alt="系统架构" align=center /></p>
+<p><img src="02.png" width="600" height="400" alt="系统架构" align=center /></p>
+<h4 id="三、ROC曲线与PR曲线的对比"><a href="#三、ROC曲线与PR曲线的对比" class="headerlink" title="三、ROC曲线与PR曲线的对比"></a>三、ROC曲线与PR曲线的对比</h4><p>​    从两图中的对比可以很明显的看出，ROC曲线朝左上角“凸起”，而PR曲线是朝右上角“凸起”。如何记忆这一特征呢？<strong>只需将判断正负例的阈值$T$分别置为模型预测得分最小值$S_{min}$及模型预测得分最大值$S_{max}$，计算对应的TPR、FPR及Recall、Precision即可。</strong></p>
+<p>​    当$T=S_{min}$，所有样本均被判为正例，于是有：</p>
+<p>​        $FPR = \frac{FP}{TN+FP}=\frac{FP}{0+FP}=1$</p>
+<p>​        $TPR = \frac{TP}{TP+FN}=\frac{TP}{TP+0}=1$</p>
+<p>​        $Recall = \frac{TP}{TP+FN}=TPR=1$</p>
+<p>​        $Precision = \frac{TP}{TP+FP}$</p>
+<p>​    当$T=S_{max}$，所有样本均被判为负例，于是有：<br>​        $FPR = \frac{FP}{TN+FP}=\frac{0}{TN+0}=0$</p>
+<p>​        $TPR = \frac{TP}{TP+FN}=\frac{0}{0+FN}=0$</p>
+<p>​        $Recall = \frac{TP}{TP+FN}=TPR=0$</p>
+<p>​        $Precision = \frac{TP}{TP+FP}=\frac{0}{0}$</p>
+<p>根据上述计算过程，可以看到ROC曲线的两个极值点坐标为<code>(1,1)</code>及<code>(0,0)</code>。当所有样本完全分类正确时，$FPR=\frac{FP}{TN+FP}=\frac{0}{TN}=0$，$TPR = \frac{TP}{TP+FN}=\frac{TP}{TP+0}=1$，即模型完美分类样本时，对应ROC曲线的点在<code>(0,1)</code>。但是模型总会有误差，所以不可能达到<code>(0,1)</code>这个点，只能尽力向<code>(0,1)</code>点靠拢。通过这样简单的分析有助于帮你记忆<strong>ROC曲线越往左上方靠分类效果越好</strong>这个性质。</p>
+<p>而PR曲线就要我们好好来研究一下了。PR的两个极值点为A(1, $\frac{TP}{TP+FP}$ (样本全判正))及B(0, $\frac{0}{0}$(样本全判负))。对于A点，当样本全判正时，$\frac{TP}{TP+FP}$其实表示<strong>数据集中真实正样本的比例$p$。</strong> 所以，A点可以表示为(1,p)。对于B点，当样本全判负时，Precision会面临一个问题：<strong>除0</strong>——此时TP及FP均为0。这在数学上是没有意义的，所以通常<strong>利用上限1表示PR曲线中Recall=0时的Precision。</strong> 上限为1又是如何推算出来的呢？个人理解，考虑这样一个场景，当模型判正阈值$T$很高，高到只有一个样本被判为正例，且该正例是真正例，此时的$Precision=\frac{TP}{TP+FP}=\frac{1}{1+0}=1$。当模型完美预测所有样本的结果时，这时的Precision及Recall均为1，所以<strong>PR曲线越往右上角凸起分类结果越好</strong>。这样，大家便可以直观上理解ROC曲线以及PR曲线了。</p>
+<p>PR曲线以及ROC曲线之间到底有什么关系呢？推荐大家看一篇论文《 The Relationship Between Precision-Recall and ROC Curves》。这篇论文深入的讨论了PR曲线与ROC曲线之间的爱恨情仇，这里就略微总结一下：</p>
+<ul>
+<li>对于一个给定正负样本的数据集，PR曲线与ROC曲线的点是一一对应的；</li>
+<li>在正负样本不均衡的场景下，PR曲线更能反应分类的性能；</li>
+<li>当且仅当曲线A比曲线B在PR空间中更占优势时，曲线A比曲线B才会在ROC空间更有优势；</li>
+</ul>
+<p>具体的证明过程暂且不表，感兴趣的同学可以阅读下原论文。也可以直接记住结论。</p>
+<h4 id="三、AUC评价指标"><a href="#三、AUC评价指标" class="headerlink" title="三、AUC评价指标"></a>三、AUC评价指标</h4><p>原始AUC值的适用场景为二分类场景。一般在各种文章或者日常交流中，大家都会经常听到离线指标<code>AUC</code>是多少多少，这里的AUC普遍指<code>ROCAUC</code>指标。所以，我们先从<code>ROCAUC</code>谈起。上文说过，<code>ROC</code>曲线越向左上角偏分类结果越好，即<code>ROC</code>曲线的<code>AUC</code>值越大越好。当<code>AUC=0.5</code>时，分类效果等于随机猜测，<code>AUC</code>越接近于1，分类效果越好。不过，如果<code>AUC</code>值过大的话，要十分警惕模型发生过拟合。</p>
+<p>以上，都是从理论层面在讨论ROC曲线。现在考虑这样一个问题：给定一个数据集，包括真实label以及模型预测结果，我们对整个数据集进行随机均匀负采样，负采样前后的AUC会变化吗？答案是不会。<strong>其实ROCAUC值是有实际意义的：根据真实label随机取正负样本对，模型对正例的预测分数比对负例的预测分数高的概率。</strong> 举个例子吧，假设有以下数据集：</p>
+<div class="table-container">
+<table>
+<thead>
+<tr>
+<th style="text-align:center"><strong>样本id </strong></th>
+<th style="text-align:center"><strong>真实label </strong></th>
+<th style="text-align:center"><strong>模型分数</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">A</td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0.2</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:center">0</td>
+<td style="text-align:center">0.8</td>
+</tr>
+<tr>
+<td style="text-align:center"></td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0.5</td>
+</tr>
+<tr>
+<td style="text-align:center">D</td>
+<td style="text-align:center">1</td>
+<td style="text-align:center">0.6</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>那么所有的正负样本对可以列出来：<code>(A,C)</code>,<code>(A,D)</code>,<code>(B,C)</code>,<code>(B,D)</code>。其中，<code>(A,C)</code>,<code>(A,D)</code>两对中正例的模型分比负例的模型分高。所以，该数据集的AUC值为 <code>2/4=0.5</code>。回过头来看上面这个问题，假设数据集中有N个正样本，有M个负样本，故正负样本对的个数为NM。不妨假设其中有x对正样本模型分是比负样本模型分大的。所以，负采样前的原始<code>AUC</code>分为$\frac{x}{NM}$。好，下面我们以<code>r(r&lt;1)</code>的比例进行负采样，就是将负样本由M个采样至rM个。正负样本对的个数变成了$N<em>r</em>M$。下面的这点对该问题的理解非常重要：<strong>因为采样是均匀的，所以对于某个正样本，其对应的模型分为x，模型分大于x的负例及模型分小于x的负例也应该是以r的比例被采样的。这就导致采样后正样本模型分比负样本模型分大的正负样本对也同时由r变为rx。</strong> 采样后的AUC值为$\frac{rx}{r*NM}=\frac{x}{NM}$。可以看到采样前后的AUC值基本是不变的。</p>
+<p>从另一个角度来说，<strong>负采样后的AUC是原始数据集的无偏估计</strong>。</p>
+<p>现在给定一个数据集，包含label以及模型预测分，如何计算ROCAUC？</p>
+<ol>
+<li><p>遍历所有正负样本pair，假定有M个。统计其中正样本模型分&gt;负样本模型分的pair数，假定有N个。那么最终的AUC可以通过$\frac{N}{M}$计算得出。</p>
+</li>
+<li><p>利用公式求解。原理与1完全一样，只是用公式表达出来。乍一看可能会有点复杂，但是经过拆解后就会发现其实很简单：</p>
+</li>
+</ol>
+<p>假设有M个正样本，N个负样本，将样本根据模型分大小从小到大排列。</p>
+<p>$AUC=\frac{\sum_{i=1}^{M}(RANK(p_i)-i)}{MN}$，$p_i$表示第i个正样本，$RANK(p_i)$表示第i个正样本的排名。</p>
+<p>提示：举个简短的例子代入到公式中会更加直观。</p>
+<h4 id="四、gAUC值"><a href="#四、gAUC值" class="headerlink" title="四、gAUC值"></a>四、gAUC值</h4><p><code>gAUC=group AUC</code>。这个group一词就表达了gAUC的精华所在。AUC表示是所有样本间的相互比较。而gAUC引入了组（group）的概念，组内相互比较，最后再通过组加权的方式算出最终的gAUC值。</p>
+<p>那么为什么要引入group的概念呢？思考下面这个场景就明白了：在搜索排序场景，一个query对应一个排序列表。数据集中肯定不止一个query，那么不同query之间模型预测分数的值之间相互比较有意义吗？没有意义！</p>
+<p>搜三亚出来的产品A的得分与搜广州出来的产品B的得分当然没有可比性。但是搜三亚出来的产品A的得分与搜三亚出来的产品B的得分这就有比较意义了。</p>
+<p>所以gAUC首先计算各group内的AUC，最终根据各group的权重进行加权求和。公式如下：</p>
+<p>$gAUC=\frac{\sum_{i\in N}{w_i * AUC_i}}{\sum_{i \in N }{w_i}}$</p>
+<p>这里的group权重可以根据不同的策略制定。</p>
+<h4 id="结尾"><a href="#结尾" class="headerlink" title="结尾"></a>结尾</h4><p>个人水平有限，小伙伴有什么补充或者好的建议，欢迎评论，一起探讨！</p>
+]]></content>
+      <categories>
+        <category>Machine Learning</category>
+        <category>Metrics</category>
+      </categories>
+      <tags>
+        <tag>Metrics</tag>
       </tags>
   </entry>
 </search>
