@@ -51,17 +51,65 @@
       </tags>
   </entry>
   <entry>
-    <title>Python动态引入包</title>
-    <url>/2022/01/09/Python%E5%8A%A8%E6%80%81%E5%BC%95%E5%85%A5%E5%8C%85/</url>
-    <content><![CDATA[<p>考虑有这样一个场景：你需要根据入参的不同去引入不同层级下的<code>util</code>模块，比如，入参<code>folder=v1</code>，需要引入<code>./v1/util.py</code>，入参folder=<code>v2</code>，需要引入<code>./v2/util.py</code>。<strong>如何利用一行代码就可以实现根据不同的入参来动态引入不同目录下的模块呢？</strong></p>
+    <title>Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读</title>
+    <url>/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/</url>
+    <content><![CDATA[<p>淘宝推荐系统目前遇到的挑战</p>
+<ul>
+<li>扩展性——数据集规模大</li>
+<li>稀疏性——用户交互行为少</li>
+<li>冷启动——新上线<code>item</code>无用户历史交互行为</li>
+</ul>
+<p>推荐一般有两个阶段：<code>matching &amp; ranking</code>。 本文聚焦在<code>matching</code>阶段，其核心任务是基于用户行为计算所有物品的两两相似度。</p>
+<p>对于用户交互行为稀疏的<code>item</code>，学习到准确的<code>embedding</code>向量是很难的事情。所以作者利用<code>side information</code>去<code>enhance the embedding procedure</code>。</p>
+<p>那么什么是<code>item</code>的<code>side information</code>？可以简单的理解为<code>item</code>的属性，与用户行为无关。例如品牌、类别、价格等等信息。至此我们可以看到，作者认为<code>side information</code>相近的<code>item</code> 在<code>embedding</code>空间也应该相近。</p>
+<p>但是，淘宝商品的<code>side information</code>有上百种，其中哪些<code>side information</code>对<code>embedding</code>重要的？作者设计了权重机制，应用在<code>embedding</code>的训练中。</p>
+<p>下面我们来看看如何获得<code>item embedding</code>以及如何将<code>side information</code>融入到<code>item embedding</code>中。</p>
+<p>作者利用用户行为进行item graph。用户行为指的是用户历史行为序列，作者利用了历史一小时内的用户行为数据进行训练。原因有以下两点：1.空间和时间限制 2.用户兴趣会随时间变化。在构建图之前，需要对数据进行消噪。可以通过以下几方面进行：</p>
+<ol>
+<li>点击后停留时间小于1s</li>
+<li>过滤异常用户。如果一个用户在三个月内点击超过3500次或者购买物品超过1000次，则认为该用户为异常用户，过滤其所有用户</li>
+<li>商家更新商品描述信息太快，导致过了一段时间后同一个identifier对应的item变成了完全不一样的东西</li>
+</ol>
+<p><strong>构图过程：</strong></p>
+<p>1.作者构建的是有向图，每条边的权重等于由<script type="math/tex">item_i</script>到<script type="math/tex">item_j</script>转移次数除以整个图的转移次数。</p>
+<p>2.只用同一session中的序列数据进行构建</p>
+<h4 id="Base-Graph-Embedding"><a href="#Base-Graph-Embedding" class="headerlink" title="Base Graph Embedding"></a>Base Graph Embedding</h4><p>作者首先定义了节点之间的转移概率：</p>
+<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715175115391.png" alt="image-20200715175115391"></p>
+<p>然后基于这个转移概率生成随机游走序列。</p>
+<p>后面的过程与基于negative sampling的skip-gram一致。</p>
+<h4 id="Graph-Embedding-with-Side-Information"><a href="#Graph-Embedding-with-Side-Information" class="headerlink" title="Graph Embedding with Side Information"></a>Graph Embedding with Side Information</h4><p>加入side information主要是减轻冷启动问题。</p>
+<p>那么side information是如何加入的呢？通过加入一个embedding层，为item本身以及n个side information训练<script type="math/tex">n + 1</script>个embedding向量，最后进行average pooling作为输入进行训练。</p>
+<p>网络结构如下：</p>
+<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715192816436.png" alt="image-20200715192816436"></p>
+<h4 id="Enhanced-Graph-Embedding-with-Side-Information"><a href="#Enhanced-Graph-Embedding-with-Side-Information" class="headerlink" title="Enhanced Graph Embedding with Side Information"></a>Enhanced Graph Embedding with Side Information</h4><p>框架与上图一样，只是对每个side information增加了一个分数，最后采用加权池化</p>
+<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715193921791.png" alt="image-20200715193921791"></p>
+]]></content>
+  </entry>
+  <entry>
+    <title>tf.Print()用法</title>
+    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
+<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
 <span id="more"></span>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> importlib</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入python第三方包</span></span><br><span class="line">np = importlib.import_module(<span class="string">&quot;numpy&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(np.random.random((<span class="number">2</span>, <span class="number">3</span>)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入模块</span></span><br><span class="line">util = importlib.import_module(<span class="string">&quot;./&#123;&#125;/util&quot;</span>.<span class="built_in">format</span>(folder))</span><br></pre></td></tr></table></figure>
+<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
+<ul>
+<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
+<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
+</ul>
+<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
+<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
+<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
+<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
+<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
 ]]></content>
       <categories>
-        <category>Python</category>
+        <category>Tensorflow</category>
       </categories>
       <tags>
-        <tag>Python</tag>
+        <tag>Tensorflow</tag>
+        <tag>Debug</tag>
       </tags>
   </entry>
   <entry>
@@ -93,30 +141,17 @@
       </tags>
   </entry>
   <entry>
-    <title>tf.Print()用法</title>
-    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
-    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
-<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
+    <title>Python动态引入包</title>
+    <url>/2022/01/09/Python%E5%8A%A8%E6%80%81%E5%BC%95%E5%85%A5%E5%8C%85/</url>
+    <content><![CDATA[<p>考虑有这样一个场景：你需要根据入参的不同去引入不同层级下的<code>util</code>模块，比如，入参<code>folder=v1</code>，需要引入<code>./v1/util.py</code>，入参folder=<code>v2</code>，需要引入<code>./v2/util.py</code>。<strong>如何利用一行代码就可以实现根据不同的入参来动态引入不同目录下的模块呢？</strong></p>
 <span id="more"></span>
-<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
-<ul>
-<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
-<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
-</ul>
-<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
-<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
-<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
-<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
-<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> importlib</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入python第三方包</span></span><br><span class="line">np = importlib.import_module(<span class="string">&quot;numpy&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(np.random.random((<span class="number">2</span>, <span class="number">3</span>)))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 引入模块</span></span><br><span class="line">util = importlib.import_module(<span class="string">&quot;./&#123;&#125;/util&quot;</span>.<span class="built_in">format</span>(folder))</span><br></pre></td></tr></table></figure>
 ]]></content>
       <categories>
-        <category>Tensorflow</category>
+        <category>Python</category>
       </categories>
       <tags>
-        <tag>Tensorflow</tag>
-        <tag>Debug</tag>
+        <tag>Python</tag>
       </tags>
   </entry>
   <entry>
