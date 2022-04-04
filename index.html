@@ -17,7 +17,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="AI engineer">
@@ -159,6 +159,110 @@
 
           <div class="content index posts-expand">
             
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/personal.jpeg">
+      <meta itemprop="name" content="David Liu">
+      <meta itemprop="description" content="AI engineer">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="TianduAI">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/" class="post-title-link" itemprop="url">谈谈id类特征过拟合问题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2022-04-04 23:30:37 / 修改时间：23:34:45" itemprop="dateCreated datePublished" datetime="2022-04-04T23:30:37+08:00">2022-04-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CTR/" itemprop="url" rel="index"><span itemprop="name">CTR</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h4 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h4><p>组内最近准备上线<code>ESMM</code>模型，其中加入了用户的点击行为序列与候选物品的相似度特征。具体的做法是：根据用户点击过的<code>item</code>序列，经过<code>Avg Pooling</code>计算出<code>representation vector</code>。而后将其与<code>candidate item</code>的<code>embedding vector</code>做<code>inner product</code>，计算用户行为序列与当前候选<code>item</code>的相似度。</p>
+<p>离线训练时发现，在第一个<code>epoch</code>中，<code>train loss</code>与<code>val loss</code>在同步下降。而在第二个<code>epoch</code>开始后，<code>train loss</code>下降，<code>val loss</code>却在一直上升。很明显，模型过拟合了。</p>
+<p>尝试将该特征剔除后，模型恢复到需要多个<code>epoch</code>才能收敛的状态。由此我们确定<strong>由于加入了id类信息，导致了模型的过拟合</strong>。</p>
+<p>类似的，阿里的<code>DIN</code>原论文中也提到了这个现象：</p>
+<blockquote>
+<p><code>Overfitting is a critical challenge for training industrial networks.For example, with addition of fine-grained features, such as features of goods_ids with dimensionality of 0.6 billion (including visited_goods_ids of user and goods_id of ad as described in Table 1), model performance falls rapidly after the first epoch during
+training without regularization.</code></p>
+</blockquote>
+<h4 id="二、原因"><a href="#二、原因" class="headerlink" title="二、原因"></a>二、原因</h4><p>我们认为，出现过拟合的原因在于：<code>id</code>类特征取值过大，各个<code>id</code>在训练集中出现的次数并不多，也就是说大部分<code>id</code>在训练集中都是相对低频的。而低频就导致模型训练时容易记录这些出现过的<code>pattern</code>，这些<code>id</code>特征的<code>representation</code>在训练时尽可能倾向于表达这些出现过的<code>pattrn</code>，而对测试集中未出现过的<code>pattern</code>表达效果却不佳，这就造成了过拟合的现象。</p>
+<p>这里的<code>pattern</code>是什么意思？举个例子，用户A之前的点击<code>id</code>序列为<code>[101,302,463]</code>，当前点击<code>item id</code>为<code>965</code>，那么这里的<code>pattern</code>可以理解为<code>101、302、463</code>这些<code>item</code>比物料库中其它<code>item</code>的<code>representation</code>更接近于<code>item_id=965</code>。模型会学到这个信息。</p>
+<p>举个极端点的例子，上述的<code>pattern</code>只出现过一次，也就是说<code>101、302、463</code>在训练集中只出现过一次，同时其对应的<code>click item_id=965</code>也只出现过一次，那么模型就会非常强烈的记住这个信息，以至于在测试集中就算某个用户点击<code>id</code>序列为<code>[101,302,463]</code>时，<code>candidate item_id</code>不等于<code>965</code>，效果就有可能变得很差。</p>
+<p>尤其是用户交互行为稀疏的场景，该现象会更明显。用户行为稀疏的含义包含两方面：1. 有交互行为的用户占比少；2. 用户交互行为长度短，比如有行为用户的平均交互长度为1.x。</p>
+<p>缓解过拟合问题，有两种解决方法：</p>
+<ul>
+<li>丰富用户行为</li>
+<li>参数正则</li>
+</ul>
+<p>第一种方法，几乎很难实现，要求场景的流量大幅提升或者采取某些策略可以强烈吸引用户点击的欲望。<code>Rome wasn&#39;t built in a day.</code>并且，如果物料库太大，如阿里的商品<code>id</code>到达<code>0.6 billion</code>级别，过拟合的现象不可避免的还是会发生。</p>
+<p>所以推荐第二种方法，对<code>id embedding</code>向量进行正则。这又引入了一个问题，常规的正则需要对存储<code>id embedding</code>词表的所有参数进行正则计算。这种计算量是不可接受的。仔细想想，每一个<code>mini batch</code>更新时，其实只有在该<code>batch</code>中出现过的<code>id embedding vector</code>才会进行更新，那我们只对这部分参数进行正则计算就可以解决计算复杂度的问题。阿里的<code>DIN</code>论文就是这么做的，有兴趣的同学可以看看。</p>
+<h4 id="三、总结"><a href="#三、总结" class="headerlink" title="三、总结"></a>三、总结</h4><p>一般来说，<code>id</code>类特征是强特征，用好它们会给模型带来比较好的收益，但是一定要注意由此引入的过拟合问题，可以通过正则解决。</p>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><ol>
+<li>阿里<code>DIN</code>论文: <em>‘Deep Interest Network for Click-Through Rate Prediction’</em></li>
+</ol>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
       
   
   
@@ -914,20 +1018,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-count">6</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-count">8</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -974,12 +1078,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">13k</span>
+    <span title="站点总字数">14k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">31 分钟</span>
+    <span title="站点阅读时长">36 分钟</span>
 </div>
 
 <div>

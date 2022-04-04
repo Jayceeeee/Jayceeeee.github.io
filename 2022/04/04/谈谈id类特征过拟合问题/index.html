@@ -20,23 +20,20 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="淘宝推荐系统目前遇到的挑战  扩展性——数据集规模大 稀疏性——用户交互行为少 冷启动——新上线item无用户历史交互行为  推荐一般有两个阶段：matching &amp; ranking。 本文聚焦在matching阶段，其核心任务是基于用户行为计算所有物品的两两相似度。 对于用户交互行为稀疏的item，学习到准确的embedding向量是很难的事情。所以作者利用side informatio">
+  <meta name="description" content="一、背景组内最近准备上线ESMM模型，其中加入了用户的点击行为序列与候选物品的相似度特征。具体的做法是：根据用户点击过的item序列，经过Avg Pooling计算出representation vector。而后将其与candidate item的embedding vector做inner product，计算用户行为序列与当前候选item的相似度。 离线训练时发现，在第一个epoch中，tr">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读">
-<meta property="og:url" content="http://example.com/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/index.html">
+<meta property="og:title" content="谈谈id类特征过拟合问题">
+<meta property="og:url" content="http://example.com/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/index.html">
 <meta property="og:site_name" content="TianduAI">
-<meta property="og:description" content="淘宝推荐系统目前遇到的挑战  扩展性——数据集规模大 稀疏性——用户交互行为少 冷启动——新上线item无用户历史交互行为  推荐一般有两个阶段：matching &amp; ranking。 本文聚焦在matching阶段，其核心任务是基于用户行为计算所有物品的两两相似度。 对于用户交互行为稀疏的item，学习到准确的embedding向量是很难的事情。所以作者利用side informatio">
+<meta property="og:description" content="一、背景组内最近准备上线ESMM模型，其中加入了用户的点击行为序列与候选物品的相似度特征。具体的做法是：根据用户点击过的item序列，经过Avg Pooling计算出representation vector。而后将其与candidate item的embedding vector做inner product，计算用户行为序列与当前候选item的相似度。 离线训练时发现，在第一个epoch中，tr">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="d:/Users/dz.liu/AppData/Roaming/Typora/typora-user-images/image-20200715175115391.png">
-<meta property="og:image" content="d:/Users/dz.liu/AppData/Roaming/Typora/typora-user-images/image-20200715192816436.png">
-<meta property="og:image" content="d:/Users/dz.liu/AppData/Roaming/Typora/typora-user-images/image-20200715193921791.png">
-<meta property="article:published_time" content="2022-02-24T13:51:38.000Z">
-<meta property="article:modified_time" content="2022-02-24T15:10:07.600Z">
+<meta property="article:published_time" content="2022-04-04T15:30:37.000Z">
+<meta property="article:modified_time" content="2022-04-04T15:34:45.455Z">
 <meta property="article:author" content="David Liu">
+<meta property="article:tag" content="原理思考">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="d:/Users/dz.liu/AppData/Roaming/Typora/typora-user-images/image-20200715175115391.png">
 
-<link rel="canonical" href="http://example.com/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/">
+<link rel="canonical" href="http://example.com/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/">
 
 
 <script id="page-configurations">
@@ -49,7 +46,7 @@
   };
 </script>
 
-  <title>Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读 | TianduAI</title>
+  <title>谈谈id类特征过拟合问题 | TianduAI</title>
   
 
 
@@ -170,7 +167,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/personal.jpeg">
@@ -183,7 +180,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读
+          谈谈id类特征过拟合问题
         </h1>
 
         <div class="post-meta">
@@ -194,7 +191,16 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-02-24 21:51:38 / 修改时间：23:10:07" itemprop="dateCreated datePublished" datetime="2022-02-24T21:51:38+08:00">2022-02-24</time>
+              <time title="创建时间：2022-04-04 23:30:37 / 修改时间：23:34:45" itemprop="dateCreated datePublished" datetime="2022-04-04T23:30:37+08:00">2022-04-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/CTR/" itemprop="url" rel="index"><span itemprop="name">CTR</span></a>
+                </span>
             </span>
 
           <br>
@@ -203,14 +209,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>1.2k</span>
+              <span>1.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>4 分钟</span>
             </span>
 
         </div>
@@ -222,36 +228,29 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>淘宝推荐系统目前遇到的挑战</p>
+        <h4 id="一、背景"><a href="#一、背景" class="headerlink" title="一、背景"></a>一、背景</h4><p>组内最近准备上线<code>ESMM</code>模型，其中加入了用户的点击行为序列与候选物品的相似度特征。具体的做法是：根据用户点击过的<code>item</code>序列，经过<code>Avg Pooling</code>计算出<code>representation vector</code>。而后将其与<code>candidate item</code>的<code>embedding vector</code>做<code>inner product</code>，计算用户行为序列与当前候选<code>item</code>的相似度。</p>
+<p>离线训练时发现，在第一个<code>epoch</code>中，<code>train loss</code>与<code>val loss</code>在同步下降。而在第二个<code>epoch</code>开始后，<code>train loss</code>下降，<code>val loss</code>却在一直上升。很明显，模型过拟合了。</p>
+<p>尝试将该特征剔除后，模型恢复到需要多个<code>epoch</code>才能收敛的状态。由此我们确定<strong>由于加入了id类信息，导致了模型的过拟合</strong>。</p>
+<p>类似的，阿里的<code>DIN</code>原论文中也提到了这个现象：</p>
+<blockquote>
+<p><code>Overfitting is a critical challenge for training industrial networks.For example, with addition of fine-grained features, such as features of goods_ids with dimensionality of 0.6 billion (including visited_goods_ids of user and goods_id of ad as described in Table 1), model performance falls rapidly after the first epoch during
+training without regularization.</code></p>
+</blockquote>
+<h4 id="二、原因"><a href="#二、原因" class="headerlink" title="二、原因"></a>二、原因</h4><p>我们认为，出现过拟合的原因在于：<code>id</code>类特征取值过大，各个<code>id</code>在训练集中出现的次数并不多，也就是说大部分<code>id</code>在训练集中都是相对低频的。而低频就导致模型训练时容易记录这些出现过的<code>pattern</code>，这些<code>id</code>特征的<code>representation</code>在训练时尽可能倾向于表达这些出现过的<code>pattrn</code>，而对测试集中未出现过的<code>pattern</code>表达效果却不佳，这就造成了过拟合的现象。</p>
+<p>这里的<code>pattern</code>是什么意思？举个例子，用户A之前的点击<code>id</code>序列为<code>[101,302,463]</code>，当前点击<code>item id</code>为<code>965</code>，那么这里的<code>pattern</code>可以理解为<code>101、302、463</code>这些<code>item</code>比物料库中其它<code>item</code>的<code>representation</code>更接近于<code>item_id=965</code>。模型会学到这个信息。</p>
+<p>举个极端点的例子，上述的<code>pattern</code>只出现过一次，也就是说<code>101、302、463</code>在训练集中只出现过一次，同时其对应的<code>click item_id=965</code>也只出现过一次，那么模型就会非常强烈的记住这个信息，以至于在测试集中就算某个用户点击<code>id</code>序列为<code>[101,302,463]</code>时，<code>candidate item_id</code>不等于<code>965</code>，效果就有可能变得很差。</p>
+<p>尤其是用户交互行为稀疏的场景，该现象会更明显。用户行为稀疏的含义包含两方面：1. 有交互行为的用户占比少；2. 用户交互行为长度短，比如有行为用户的平均交互长度为1.x。</p>
+<p>缓解过拟合问题，有两种解决方法：</p>
 <ul>
-<li>扩展性——数据集规模大</li>
-<li>稀疏性——用户交互行为少</li>
-<li>冷启动——新上线<code>item</code>无用户历史交互行为</li>
+<li>丰富用户行为</li>
+<li>参数正则</li>
 </ul>
-<p>推荐一般有两个阶段：<code>matching &amp; ranking</code>。 本文聚焦在<code>matching</code>阶段，其核心任务是基于用户行为计算所有物品的两两相似度。</p>
-<p>对于用户交互行为稀疏的<code>item</code>，学习到准确的<code>embedding</code>向量是很难的事情。所以作者利用<code>side information</code>去<code>enhance the embedding procedure</code>。</p>
-<p>那么什么是<code>item</code>的<code>side information</code>？可以简单的理解为<code>item</code>的属性，与用户行为无关。例如品牌、类别、价格等等信息。至此我们可以看到，作者认为<code>side information</code>相近的<code>item</code> 在<code>embedding</code>空间也应该相近。</p>
-<p>但是，淘宝商品的<code>side information</code>有上百种，其中哪些<code>side information</code>对<code>embedding</code>重要的？作者设计了权重机制，应用在<code>embedding</code>的训练中。</p>
-<p>下面我们来看看如何获得<code>item embedding</code>以及如何将<code>side information</code>融入到<code>item embedding</code>中。</p>
-<p>作者利用用户行为进行item graph。用户行为指的是用户历史行为序列，作者利用了历史一小时内的用户行为数据进行训练。原因有以下两点：1.空间和时间限制 2.用户兴趣会随时间变化。在构建图之前，需要对数据进行消噪。可以通过以下几方面进行：</p>
-<ol>
-<li>点击后停留时间小于1s</li>
-<li>过滤异常用户。如果一个用户在三个月内点击超过3500次或者购买物品超过1000次，则认为该用户为异常用户，过滤其所有用户</li>
-<li>商家更新商品描述信息太快，导致过了一段时间后同一个identifier对应的item变成了完全不一样的东西</li>
+<p>第一种方法，几乎很难实现，要求场景的流量大幅提升或者采取某些策略可以强烈吸引用户点击的欲望。<code>Rome wasn&#39;t built in a day.</code>并且，如果物料库太大，如阿里的商品<code>id</code>到达<code>0.6 billion</code>级别，过拟合的现象不可避免的还是会发生。</p>
+<p>所以推荐第二种方法，对<code>id embedding</code>向量进行正则。这又引入了一个问题，常规的正则需要对存储<code>id embedding</code>词表的所有参数进行正则计算。这种计算量是不可接受的。仔细想想，每一个<code>mini batch</code>更新时，其实只有在该<code>batch</code>中出现过的<code>id embedding vector</code>才会进行更新，那我们只对这部分参数进行正则计算就可以解决计算复杂度的问题。阿里的<code>DIN</code>论文就是这么做的，有兴趣的同学可以看看。</p>
+<h4 id="三、总结"><a href="#三、总结" class="headerlink" title="三、总结"></a>三、总结</h4><p>一般来说，<code>id</code>类特征是强特征，用好它们会给模型带来比较好的收益，但是一定要注意由此引入的过拟合问题，可以通过正则解决。</p>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><ol>
+<li>阿里<code>DIN</code>论文: <em>‘Deep Interest Network for Click-Through Rate Prediction’</em></li>
 </ol>
-<p><strong>构图过程：</strong></p>
-<p>1.作者构建的是有向图，每条边的权重等于由<script type="math/tex">item_i</script>到<script type="math/tex">item_j</script>转移次数除以整个图的转移次数。</p>
-<p>2.只用同一session中的序列数据进行构建</p>
-<h4 id="Base-Graph-Embedding"><a href="#Base-Graph-Embedding" class="headerlink" title="Base Graph Embedding"></a>Base Graph Embedding</h4><p>作者首先定义了节点之间的转移概率：</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715175115391.png" alt="image-20200715175115391"></p>
-<p>然后基于这个转移概率生成随机游走序列。</p>
-<p>后面的过程与基于negative sampling的skip-gram一致。</p>
-<h4 id="Graph-Embedding-with-Side-Information"><a href="#Graph-Embedding-with-Side-Information" class="headerlink" title="Graph Embedding with Side Information"></a>Graph Embedding with Side Information</h4><p>加入side information主要是减轻冷启动问题。</p>
-<p>那么side information是如何加入的呢？通过加入一个embedding层，为item本身以及n个side information训练<script type="math/tex">n + 1</script>个embedding向量，最后进行average pooling作为输入进行训练。</p>
-<p>网络结构如下：</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715192816436.png" alt="image-20200715192816436"></p>
-<h4 id="Enhanced-Graph-Embedding-with-Side-Information"><a href="#Enhanced-Graph-Embedding-with-Side-Information" class="headerlink" title="Enhanced Graph Embedding with Side Information"></a>Enhanced Graph Embedding with Side Information</h4><p>框架与上图一样，只是对每个side information增加了一个分数，最后采用加权池化</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715193921791.png" alt="image-20200715193921791"></p>
 
     </div>
 
@@ -260,6 +259,9 @@
     
 
       <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%8E%9F%E7%90%86%E6%80%9D%E8%80%83/" rel="tag"># 原理思考</a>
+          </div>
 
         
 
@@ -267,13 +269,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2022/02/17/%E4%B8%80%E6%96%87%E5%B8%A6%E4%BD%A0%E5%90%83%E9%80%8FAUC/" rel="prev" title="一文带你吃透AUC">
-      <i class="fa fa-chevron-left"></i> 一文带你吃透AUC
+    <a href="/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/" rel="prev" title="Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读">
+      <i class="fa fa-chevron-left"></i> Billion-scale Commodity Embedding for E-commerceRecommendation in Alibaba论文阅读
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2022/04/04/%E8%B0%88%E8%B0%88id%E7%B1%BB%E7%89%B9%E5%BE%81%E8%BF%87%E6%8B%9F%E5%90%88%E9%97%AE%E9%A2%98/" rel="next" title="谈谈id类特征过拟合问题">
-      谈谈id类特征过拟合问题 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -333,7 +332,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#Base-Graph-Embedding"><span class="nav-number">1.</span> <span class="nav-text">Base Graph Embedding</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Graph-Embedding-with-Side-Information"><span class="nav-number">2.</span> <span class="nav-text">Graph Embedding with Side Information</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Enhanced-Graph-Embedding-with-Side-Information"><span class="nav-number">3.</span> <span class="nav-text">Enhanced Graph Embedding with Side Information</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E8%83%8C%E6%99%AF"><span class="nav-number">1.</span> <span class="nav-text">一、背景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%8E%9F%E5%9B%A0"><span class="nav-number">2.</span> <span class="nav-text">二、原因</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E6%80%BB%E7%BB%93"><span class="nav-number">3.</span> <span class="nav-text">三、总结</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -492,7 +491,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'next-gitalk',
       owner       : 'Jayceeeee',
       admin       : ['Jayceeeee'],
-      id          : '0d132a726309432e84138ed6ec54518f',
+      id          : '462723d19de14987fcacb2f2791a2939',
         language: 'zh-CN',
       distractionFreeMode: true
     });
