@@ -11,6 +11,7 @@
 </ul>
 <p>推荐一般有两个阶段：<code>matching &amp; ranking</code>。 本文聚焦在<code>matching</code>阶段，其核心任务是基于用户行为计算所有物品的两两相似度。</p>
 <p>对于用户交互行为稀疏的<code>item</code>，学习到准确的<code>embedding</code>向量是很难的事情。所以作者利用<code>side information</code>去<code>enhance the embedding procedure</code>。</p>
+<span id="more"></span>
 <p>那么什么是<code>item</code>的<code>side information</code>？可以简单的理解为<code>item</code>的属性，与用户行为无关。例如品牌、类别、价格等等信息。至此我们可以看到，作者认为<code>side information</code>相近的<code>item</code> 在<code>embedding</code>空间也应该相近。</p>
 <p>但是，淘宝商品的<code>side information</code>有上百种，其中哪些<code>side information</code>对<code>embedding</code>重要的？作者设计了权重机制，应用在<code>embedding</code>的训练中。</p>
 <p>下面我们来看看如何获得<code>item embedding</code>以及如何将<code>side information</code>融入到<code>item embedding</code>中。</p>
@@ -24,21 +25,22 @@
 <p>1.作者构建的是有向图，每条边的权重等于由<script type="math/tex">item_i</script>到<script type="math/tex">item_j</script>转移次数除以整个图的转移次数。</p>
 <p>2.只用同一session中的序列数据进行构建</p>
 <h4 id="Base-Graph-Embedding"><a href="#Base-Graph-Embedding" class="headerlink" title="Base Graph Embedding"></a>Base Graph Embedding</h4><p>作者首先定义了节点之间的转移概率：</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715175115391.png" alt="image-20200715175115391"></p>
+<img src="/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/01.png" class="">
 <p>然后基于这个转移概率生成随机游走序列。</p>
 <p>后面的过程与基于negative sampling的skip-gram一致。</p>
 <h4 id="Graph-Embedding-with-Side-Information"><a href="#Graph-Embedding-with-Side-Information" class="headerlink" title="Graph Embedding with Side Information"></a>Graph Embedding with Side Information</h4><p>加入side information主要是减轻冷启动问题。</p>
 <p>那么side information是如何加入的呢？通过加入一个embedding层，为item本身以及n个side information训练<script type="math/tex">n + 1</script>个embedding向量，最后进行average pooling作为输入进行训练。</p>
 <p>网络结构如下：</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715192816436.png" alt="image-20200715192816436"></p>
+<img src="/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/02.png" class="">
 <h4 id="Enhanced-Graph-Embedding-with-Side-Information"><a href="#Enhanced-Graph-Embedding-with-Side-Information" class="headerlink" title="Enhanced Graph Embedding with Side Information"></a>Enhanced Graph Embedding with Side Information</h4><p>框架与上图一样，只是对每个side information增加了一个分数，最后采用加权池化</p>
-<p><img src="D:\Users\dz.liu\AppData\Roaming\Typora\typora-user-images\image-20200715193921791.png" alt="image-20200715193921791"></p>
+<img src="/2022/02/24/Billion-scale%20Commodity%20Embedding%20for%20E-commerceRecommendation%20in%20Alibaba%E8%AE%BA%E6%96%87%E9%98%85%E8%AF%BB/03.png" class="">
 ]]></content>
   </entry>
   <entry>
     <title>DPP多样性算法</title>
     <url>/2022/04/19/DPP%E5%A4%9A%E6%A0%B7%E6%80%A7%E7%AE%97%E6%B3%95/</url>
     <content><![CDATA[<p><code>DPP (Determinantal point process)</code> 是一种概率模型，其描述了在全集中进行子集抽样的分布。本文主要介绍<code>DPP</code>算法在推荐系统中的应用，由<code>Hulu</code>公司在NIPS 2018会议上发表的论文<a href="https://proceedings.neurips.cc/paper/2018/file/dbbf603ff0e99629dda5d75b6f75f966-Paper.pdf">‘<em>Fast Greedy MAP Inference for Determinantal Point Process to Improve Recommendation Diversity</em>‘</a>中提出。本文中的<code>DPP</code>均指应用在推荐领域中的概念。</p>
+<span id="more"></span>
 <p><strong>DPP的目的是什么？</strong></p>
 <p>对于给定的商品候选列表，兼顾<strong>相关性</strong>以及<strong>多样性</strong>的选出一个商品子集。</p>
 <p><strong>怎样做到兼顾相关性及多样性?</strong></p>
@@ -54,7 +56,7 @@ log(det(\mathbf{L}_{R_u}))=\sum_{i\in R_u}log(\mathbf r_{u,i}^2) + log(det(\math
 <p>第二项中的$\mathbf{S}_{R_u}$是商品集$R_u$相似度矩阵，$\mathbf{S}_{R_u}=\mathbf{F}_{R_u}^{\mathbf{}T}\mathbf{F}_{R_u}$，其中$\mathbf{F}\in \mathbf{R}^{N*M}$，$N$表示<code>item representation vector</code>的维度，$M$表示<code>item</code>数。由行列式的乘法定理可知，当$A$与$B$为维度相同的方阵时，$det(AB)=det(A)det(B)$。所以，</p>
 <script type="math/tex; mode=display">
 det(\mathbf{S}_{R_u})=det(\mathbf{F}_{R_u}^T)det(\mathbf{F}_{R_u}) \tag{2}</script><p>矩阵$\mathbf{A}$行列式的物理含义是：以$\mathbf{A}$的列向量为张量，张成多边体的体积。对于二维矩阵，行列式等于张成多边形的面积。如下图所示。</p>
-<p><img src="01.png" align=center /></p>
+<img src="/2022/04/19/DPP%E5%A4%9A%E6%A0%B7%E6%80%A7%E7%AE%97%E6%B3%95/01.png" class="">
 <p>所以$det(\mathbf{S}_{R_u})=Vol^2(\mathbf{F}_{R_u})$，其中，$Vol(\mathbf{F}_{R_u})$表示$\mathbf{F}_{R_u}$张成的体积。当多边体形成立方体时，体积最大，这时$R_u$列表中的<code>item</code>表示向量都是正交的。正交就意味着两个<code>item</code>的相似度为0。当然这是理想情况，这也说明了<strong>行列式越大，多样性越好</strong>，为衡量多样性提供了依据。</p>
 <p>综上，通过计算$\mathbf{L}_{R_u}$的行列式，可以同时衡量相关性和多样性。</p>
 <p><strong>如何求解$R_u$？</strong></p>
@@ -62,9 +64,9 @@ det(\mathbf{S}_{R_u})=det(\mathbf{F}_{R_u}^T)det(\mathbf{F}_{R_u}) \tag{2}</scri
 <p>也就是说，从结果集$Y_g=\{\}$开始，每次选取<code>item j</code>使得结果集$Y_g\cup{j}$的<code>kernel matrix</code>$\mathbf{L}_{Yg\cup j}$的行列式相较于$\mathbf{L}_{Y_g}$提升最大，即：</p>
 <script type="math/tex; mode=display">
 j=argmax_{i\in Z/{Y_g}}logdet(\mathbf{L_{Y_g\cup{i}}})-logdet(\mathbf{L}_{Y_g})</script><p> 具体的算法流程如下：</p>
-<p><img src="02.png" align=center /></p>
+<img src="/2022/04/19/DPP%E5%A4%9A%E6%A0%B7%E6%80%A7%E7%AE%97%E6%B3%95/02.png" class="">
 <p>在实际的推荐场景中，用户往往在一屏中会看到固定个数的<code>item</code>，当用户产生下滑行为时，这时的多样性其实是滑动窗口<code>(sliding window)</code>内的多样性。具体的算法流程如下：</p>
-<p><img src="/Users/david/Documents/tianduai/source/_posts/DPP多样性算法/03.png" alt="image-20220419211559546"></p>
+<img src="/2022/04/19/DPP%E5%A4%9A%E6%A0%B7%E6%80%A7%E7%AE%97%E6%B3%95/03.png" class="">
 <p>当然，上述流程的背后其实有数学理论支撑。由于本篇文章篇幅有限，有兴趣的小伙伴可以阅读原论文进行深入的理解。</p>
 <h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><ul>
 <li><a href="https://proceedings.neurips.cc/paper/2018/file/dbbf603ff0e99629dda5d75b6f75f966-Paper.pdf"><em>Fast Greedy MAP Inference for Determinantal Point Process to Improve Recommendation Diversity</em></a></li>
@@ -142,6 +144,33 @@ j=argmax_{i\in Z/{Y_g}}logdet(\mathbf{L_{Y_g\cup{i}}})-logdet(\mathbf{L}_{Y_g})<
       </tags>
   </entry>
   <entry>
+    <title>tf.Print()用法</title>
+    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
+<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
+<span id="more"></span>
+<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
+<ul>
+<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
+<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
+</ul>
+<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
+<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
+<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
+<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
+<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Debug</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Tensorflow实现cosine similarity</title>
     <url>/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/</url>
     <content><![CDATA[<blockquote>
@@ -167,33 +196,6 @@ j=argmax_{i\in Z/{Y_g}}logdet(\mathbf{L_{Y_g\cup{i}}})-logdet(\mathbf{L}_{Y_g})<
       </categories>
       <tags>
         <tag>Tensorflow</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>tf.Print()用法</title>
-    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
-    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
-<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
-<span id="more"></span>
-<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
-<ul>
-<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
-<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
-</ul>
-<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
-<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
-<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
-<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
-<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
-]]></content>
-      <categories>
-        <category>Tensorflow</category>
-      </categories>
-      <tags>
-        <tag>Tensorflow</tag>
-        <tag>Debug</tag>
       </tags>
   </entry>
   <entry>
