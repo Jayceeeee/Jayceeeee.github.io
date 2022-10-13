@@ -405,4 +405,24 @@ training without regularization.</code></p>
         <tag>原理思考</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Tensorflow自定义Layer只能用add_weight定义权重吗？</title>
+    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%8F%AA%E8%83%BD%E7%94%A8add_weight%E5%AE%9A%E4%B9%89%E6%9D%83%E9%87%8D%E5%90%97%EF%BC%9F/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
+<p><code>Tensorflow</code>实现自定义<code>Layer</code>时，所有的权重一定得在<code>build()</code>方法中通过<code>self.add_weight()</code>添加吗？</p>
+<span id="more"></span>
+<p>不一定。<code>self.add_weight()</code>是最直观但也是最原始的方法，定义起来功能不够灵活。可以在<code>build()</code>方法中，直接应用<code>Layer</code>，比如<code>Dense</code>。</p>
+<p>举个例子，我们自定义<code>Layer</code>实现<code>Dense</code>层的功能，下面分别呈现利用<code>self.add_weight()</code>实现以及直接调用<code>Dense()</code>实现的代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># self.add_weight()实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.w = self.add_weight(shape=(input_shape[-<span class="number">1</span>], self.units))</span><br><span class="line">        self.b = self.add_weight(shape=(units,))</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> tf.matmul(inputs, self.w) + self.b</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 调用Dense层实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.dense = tf.keras.layers.Dense(units=self.units)</span><br><span class="line">        </span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.dense(inputs)</span><br></pre></td></tr></table></figure>
+<p>可以看到，在<code>build()</code>中直接调用官方提供的Dense层在灵活性以及功能性上都有较大优势。</p>
+<p>不过，要遵循一个原则，涉及到权重初始化的操作均应定义在<code>build()</code>中，不能出现在<code>call()</code>方法中。</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+      </tags>
+  </entry>
 </search>
