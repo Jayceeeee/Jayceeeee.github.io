@@ -420,6 +420,34 @@ training without regularization.</code></p>
 ]]></content>
       <categories>
         <category>Tensorflow</category>
+        <category>Tensorflow开发注意事项</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Tensorflow开发注意事项</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Tensorflow自定义Layer多输入input_shape</title>
+    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%A4%9A%E8%BE%93%E5%85%A5input-shape/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
+<p><code>Tensorflow</code>中，继承<code>Layer</code>实现自定义类，一般重写<code>build()</code>方法，且<code>build()</code>方法需接收<code>input_shape</code>这一个参数。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">customLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        xxx</span><br></pre></td></tr></table></figure>
+<p>若该层只有一个输入，那么<code>input_shape</code>就是该输入的<code>shape</code>。</p>
+<p>若该层有多个输入，那么<code>input_shape</code>为每个输入<code>shape</code>的<code>list</code>。需要注意的是，<strong>这时候<code>call()</code>函数中的多个输入需要以一个<code>list</code>的形式传入</strong>。</p>
+<span id="more"></span>
+<p>下面展示正确用法与错误用法，注释中详细介绍了细节：</p>
+<ul>
+<li><p>正确用法</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为：[TensorShape([None, 5]), TensorShape([None, 3])]</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x</span>):</span> <span class="comment"># 这里多输入需要将x以list的形式传入</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x[<span class="number">0</span>], self.w1), tf.matmul(x[<span class="number">1</span>], self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">5</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()([inputs1, inputs2])</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>错误用法</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为(None, 6)，因为call()函数中分开传入了多个输入</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x1, x2</span>):</span> <span class="comment"># 这里分别输入，得不到正确结果</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x1, self.w1), tf.matmul(x2, self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">6</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()(inputs1, inputs2)</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
       </categories>
       <tags>
         <tag>Tensorflow</tag>
