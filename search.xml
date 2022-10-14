@@ -453,4 +453,25 @@ training without regularization.</code></p>
         <tag>Tensorflow</tag>
       </tags>
   </entry>
+  <entry>
+    <title>post</title>
+    <url>/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/</url>
+    <content><![CDATA[<p><code>keras</code>中<code>model.predict(x)</code>与<code>model(x)</code>有什么区别？</p>
+<p><a href="https://stackoverflow.com/questions/60837962/confusion-about-keras-model-call-vs-call-vs-predict-methods">StackOverflow传送门</a></p>
+<img src="/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/01.png" class="">
+<span id="more"></span>
+<p>总结：</p>
+<ol>
+<li>最大的区别在于：<code>predict</code>是通过<code>batch</code>读取数据集分批次预测的，而<code>call</code>方法是一次性加载所有的数据。所以，在小数据集上<code>call</code>方法会更快</li>
+<li>如果想要通过预测结果计算梯度，只能用<code>call</code>方法，不能用<code>predict</code>方法，因为<code>predict</code>方法计算过程不会记录到梯度带上。也就是说，如果你想自定义训练过程，必须通过<code>model(x)</code>获取前向传播值，然后再根据输出反向传播计算梯度。</li>
+<li><code>predict</code>与<code>call</code>方法返回的数据类型不一样。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+      </tags>
+  </entry>
 </search>
