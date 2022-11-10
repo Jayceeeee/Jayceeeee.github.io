@@ -144,30 +144,25 @@ j=argmax_{i\in Z/{Y_g}}logdet(\mathbf{L_{Y_g\cup{i}}})-logdet(\mathbf{L}_{Y_g})<
       </tags>
   </entry>
   <entry>
-    <title>tf.Print()用法</title>
-    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
-    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
-<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
-<span id="more"></span>
-<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
+    <title>Step by Step实现推荐系统中的Transformer</title>
+    <url>/2022/11/08/Step-by-Step%E5%AE%9E%E7%8E%B0%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Transformer/</url>
+    <content><![CDATA[<p>用户行为序列的处理方式有很多，从原始的<code>pooling</code>类，如<code>average pooling</code>、<code>weighted average pooling</code>等，到<code>Attention</code>类，如<code>DIN</code>中的处理模式等，到<code>Sequence</code>类，如<code>DIEN</code>中的<code>GRU</code>等。<code>Transformer</code>一出生就大放异彩，而用户行为序列天然就适用于<code>Transformer</code>等这种序列模型，于是<code>Transformer</code>在用户行为序列中被广泛使用。本文，从0开始构建适用于推荐系统的<code>Transformer Layer</code>，会设计到其中的各种细节，并辅以代码详细讲解。</p>
+<p><code>Transformer</code>的经典结构图如下所示：<br><img src="/2022/11/08/Step-by-Step%E5%AE%9E%E7%8E%B0%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Transformer/01.png" class=""></p>
+<p><strong>首先明确一点，推荐系统中的<code>Transformer Layer</code>只有上图左半部分，即<code>Encoder</code>，<code>Decoder</code>是不参与的。</strong> 实现<code>Transformer Layer</code>，可以将其拆解为以下几个步骤实现：</p>
 <ul>
-<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
-<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
+<li><code>Positional Embedding</code></li>
+<li><code>Self Attention</code></li>
+<li><code>Multi-head Attention</code></li>
+<li><code>Feed-forward Network</code></li>
 </ul>
-<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
-<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
-<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
-<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
-<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
+<p>下面我们逐一进行实现，<code>Action!</code></p>
+<h2 id="Positional-Embedding"><a href="#Positional-Embedding" class="headerlink" title="Positional Embedding"></a>Positional Embedding</h2><p>什么是<code>Positional Embedding</code>？为什么需要它？简而言之，就是<code>Self Attention</code>的计算过程中没有考虑<code>item</code>在行为序列中的位次信息，所以需要增加与位置相关的<code>Positional Embedding</code>，以引入位次信息，其具体表现形式就是一个矩阵，其中的每个元素均与<code>item</code>在序列中的位次相关。想要更详细的了解<code>Positional Embedding</code>，可以阅读<a href="https://zhuanlan.zhihu.com/p/338592312">《一文教你彻底理解Transformer中Positional Encoding》</a>。在《Attention is all you need》</p>
 ]]></content>
       <categories>
-        <category>Tensorflow</category>
+        <category>用户行为序列</category>
       </categories>
       <tags>
-        <tag>Tensorflow</tag>
-        <tag>Debug</tag>
+        <tag>推荐系统</tag>
       </tags>
   </entry>
   <entry>
@@ -196,6 +191,102 @@ j=argmax_{i\in Z/{Y_g}}logdet(\mathbf{L_{Y_g\cup{i}}})-logdet(\mathbf{L}_{Y_g})<
       </categories>
       <tags>
         <tag>Tensorflow</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Tensorflow自定义Layer多输入input_shape</title>
+    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%A4%9A%E8%BE%93%E5%85%A5input-shape/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
+<p><code>Tensorflow</code>中，继承<code>Layer</code>实现自定义类，一般重写<code>build()</code>方法，且<code>build()</code>方法需接收<code>input_shape</code>这一个参数。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">customLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        xxx</span><br></pre></td></tr></table></figure>
+<p>若该层只有一个输入，那么<code>input_shape</code>就是该输入的<code>shape</code>。</p>
+<p>若该层有多个输入，那么<code>input_shape</code>为每个输入<code>shape</code>的<code>list</code>。需要注意的是，<strong>这时候<code>call()</code>函数中的多个输入需要以一个<code>list</code>的形式传入</strong>。</p>
+<span id="more"></span>
+<p>下面展示正确用法与错误用法，注释中详细介绍了细节：</p>
+<ul>
+<li><p>正确用法</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为：[TensorShape([None, 5]), TensorShape([None, 3])]</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x</span>):</span> <span class="comment"># 这里多输入需要将x以list的形式传入</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x[<span class="number">0</span>], self.w1), tf.matmul(x[<span class="number">1</span>], self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">5</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()([inputs1, inputs2])</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>错误用法</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为(None, 6)，因为call()函数中分开传入了多个输入</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x1, x2</span>):</span> <span class="comment"># 这里分别输入，得不到正确结果</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x1, self.w1), tf.matmul(x2, self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">6</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()(inputs1, inputs2)</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Tensorflow自定义Layer只能用add_weight定义权重吗？</title>
+    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%8F%AA%E8%83%BD%E7%94%A8add_weight%E5%AE%9A%E4%B9%89%E6%9D%83%E9%87%8D%E5%90%97%EF%BC%9F/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
+<p><code>Tensorflow</code>实现自定义<code>Layer</code>时，所有的权重一定得在<code>build()</code>方法中通过<code>self.add_weight()</code>添加吗？</p>
+<span id="more"></span>
+<p>不一定。<code>self.add_weight()</code>是最直观但也是最原始的方法，定义起来功能不够灵活。可以在<code>build()</code>方法中，直接应用<code>Layer</code>，比如<code>Dense</code>。</p>
+<p>举个例子，我们自定义<code>Layer</code>实现<code>Dense</code>层的功能，下面分别呈现利用<code>self.add_weight()</code>实现以及直接调用<code>Dense()</code>实现的代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># self.add_weight()实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.w = self.add_weight(shape=(input_shape[-<span class="number">1</span>], self.units))</span><br><span class="line">        self.b = self.add_weight(shape=(units,))</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> tf.matmul(inputs, self.w) + self.b</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 调用Dense层实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.dense = tf.keras.layers.Dense(units=self.units)</span><br><span class="line">        </span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.dense(inputs)</span><br></pre></td></tr></table></figure>
+<p>可以看到，在<code>build()</code>中直接调用官方提供的Dense层在灵活性以及功能性上都有较大优势。</p>
+<p>不过，要遵循一个原则，涉及到权重初始化的操作均应定义在<code>build()</code>中，不能出现在<code>call()</code>方法中。</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+        <category>Tensorflow开发注意事项</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Tensorflow开发注意事项</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>post</title>
+    <url>/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/</url>
+    <content><![CDATA[<p><code>keras</code>中<code>model.predict(x)</code>与<code>model(x)</code>有什么区别？</p>
+<p><a href="https://stackoverflow.com/questions/60837962/confusion-about-keras-model-call-vs-call-vs-predict-methods">StackOverflow传送门</a></p>
+<img src="/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/01.png" class="">
+<span id="more"></span>
+<p>总结：</p>
+<ol>
+<li>最大的区别在于：<code>predict</code>是通过<code>batch</code>读取数据集分批次预测的，而<code>call</code>方法是一次性加载所有的数据。所以，在小数据集上<code>call</code>方法会更快</li>
+<li>如果想要通过预测结果计算梯度，只能用<code>call</code>方法，不能用<code>predict</code>方法，因为<code>predict</code>方法计算过程不会记录到梯度带上。也就是说，如果你想自定义训练过程，必须通过<code>model(x)</code>获取前向传播值，然后再根据输出反向传播计算梯度。</li>
+<li><code>predict</code>与<code>call</code>方法返回的数据类型不一样。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>tf.Print()用法</title>
+    <url>/2022/01/09/tf.Print()%E7%94%A8%E6%B3%95/</url>
+    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 1.14.0</code></p>
+<p>在模型训练的过程中，经常会有实时观察中间<code>tensor</code>值的需求。<code>Python</code>自带的<code>print</code>函数只能打印出<code>tensor</code>或者<code>op</code>的名字、属性信息等等，所以需另辟蹊径。</p>
+<span id="more"></span>
+<p>实际上，在模型训练时，打印出某些<code>tensor</code>的中间值，有两种实现方法：</p>
+<ul>
+<li>运行<code>sess.run(tensor)</code>，可以得到<code>tensor</code>的值</li>
+<li>采用<code>tf.Print(tensor)</code>函数，直接打印出<code>tensor</code>的当前值</li>
+</ul>
+<p>第一种方法的典型场景是<strong>间隔性的获取结果类型<code>tensor</code>值</strong>。比如，在训练过程中每迭代100次打印出当前的<code>loss</code>值以便观察。</p>
+<p>当然，如果<code>tensor</code>的值不依赖于<code>placeholder</code>的计算，比如某一层的权重<code>tensor-W</code>，调用<code>sess.run(tensor)</code>时是不需要指定<code>feed_dict</code>的。这样也可以实现在训练过程中打印出<code>tensor</code>值的目标。</p>
+<p>第二种方法<strong>更加具有普适性，可以打印出任意<code>tensor</code>在当前迭代时的值</strong>。不过，在使用<code>tf.Print()</code>函数时，需要用静态图的视角去考虑。</p>
+<p><code>tf.Print()</code>其实是静态图中的一个<code>op</code>节点。如果在运行一个op时，数据流没有流经该<code>tf.Print op</code>节点，则<code>tf.Print()</code>不会生效。如果加入了<code>tf.Print</code>却没有按预期打印出想要的结果，建议仔细检查下静态图逻辑。</p>
+<p>数据流入<code>tf.Print</code>节点后，会原样返回。所以<code>tf.Print</code>可以看做恒等输出<code>op</code>，只是打印出了流入数据的值而已。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">tf.Print(</span><br><span class="line">    input_,</span><br><span class="line">    data,</span><br><span class="line">    message=<span class="literal">None</span>,</span><br><span class="line">    first_n=<span class="literal">None</span>,</span><br><span class="line">    summarize=<span class="literal">None</span>,</span><br><span class="line">    name=<span class="literal">None</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+<p><code>input_</code>为输入的<code>tensor</code>，会原样返回；<br><code>data</code>为需要打印的<code>tensor</code>；<br><code>message</code>为日志输出时的前缀信息；</p>
+]]></content>
+      <categories>
+        <category>Tensorflow</category>
+      </categories>
+      <tags>
+        <tag>Tensorflow</tag>
+        <tag>Debug</tag>
       </tags>
   </entry>
   <entry>
@@ -403,75 +494,6 @@ training without regularization.</code></p>
       </categories>
       <tags>
         <tag>原理思考</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Tensorflow自定义Layer只能用add_weight定义权重吗？</title>
-    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%8F%AA%E8%83%BD%E7%94%A8add_weight%E5%AE%9A%E4%B9%89%E6%9D%83%E9%87%8D%E5%90%97%EF%BC%9F/</url>
-    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
-<p><code>Tensorflow</code>实现自定义<code>Layer</code>时，所有的权重一定得在<code>build()</code>方法中通过<code>self.add_weight()</code>添加吗？</p>
-<span id="more"></span>
-<p>不一定。<code>self.add_weight()</code>是最直观但也是最原始的方法，定义起来功能不够灵活。可以在<code>build()</code>方法中，直接应用<code>Layer</code>，比如<code>Dense</code>。</p>
-<p>举个例子，我们自定义<code>Layer</code>实现<code>Dense</code>层的功能，下面分别呈现利用<code>self.add_weight()</code>实现以及直接调用<code>Dense()</code>实现的代码：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># self.add_weight()实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.w = self.add_weight(shape=(input_shape[-<span class="number">1</span>], self.units))</span><br><span class="line">        self.b = self.add_weight(shape=(units,))</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> tf.matmul(inputs, self.w) + self.b</span><br></pre></td></tr></table></figure>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 调用Dense层实现</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">tf.keras.layers.Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">units=<span class="number">1</span></span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__()</span><br><span class="line">        self.units = units</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        self.dense = tf.keras.layers.Dense(units=self.units)</span><br><span class="line">        </span><br><span class="line">	<span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, inputs</span>):</span></span><br><span class="line">        <span class="keyword">return</span> self.dense(inputs)</span><br></pre></td></tr></table></figure>
-<p>可以看到，在<code>build()</code>中直接调用官方提供的Dense层在灵活性以及功能性上都有较大优势。</p>
-<p>不过，要遵循一个原则，涉及到权重初始化的操作均应定义在<code>build()</code>中，不能出现在<code>call()</code>方法中。</p>
-]]></content>
-      <categories>
-        <category>Tensorflow</category>
-        <category>Tensorflow开发注意事项</category>
-      </categories>
-      <tags>
-        <tag>Tensorflow</tag>
-        <tag>Tensorflow开发注意事项</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Tensorflow自定义Layer多输入input_shape</title>
-    <url>/2022/10/13/Tensorflow%E8%87%AA%E5%AE%9A%E4%B9%89Layer%E5%A4%9A%E8%BE%93%E5%85%A5input-shape/</url>
-    <content><![CDATA[<p><strong>环境：</strong><code>tensorflow 2.0.0</code></p>
-<p><code>Tensorflow</code>中，继承<code>Layer</code>实现自定义类，一般重写<code>build()</code>方法，且<code>build()</code>方法需接收<code>input_shape</code>这一个参数。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">customLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        xxx</span><br></pre></td></tr></table></figure>
-<p>若该层只有一个输入，那么<code>input_shape</code>就是该输入的<code>shape</code>。</p>
-<p>若该层有多个输入，那么<code>input_shape</code>为每个输入<code>shape</code>的<code>list</code>。需要注意的是，<strong>这时候<code>call()</code>函数中的多个输入需要以一个<code>list</code>的形式传入</strong>。</p>
-<span id="more"></span>
-<p>下面展示正确用法与错误用法，注释中详细介绍了细节：</p>
-<ul>
-<li><p>正确用法</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为：[TensorShape([None, 5]), TensorShape([None, 3])]</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x</span>):</span> <span class="comment"># 这里多输入需要将x以list的形式传入</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x[<span class="number">0</span>], self.w1), tf.matmul(x[<span class="number">1</span>], self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">5</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()([inputs1, inputs2])</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>错误用法</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">myLayer</span>(<span class="params">Layer</span>):</span></span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">__init__</span>(<span class="params">self, *args, **kwargs</span>):</span></span><br><span class="line">        <span class="built_in">super</span>(myLayer, self).__init__(*args, **kwargs)</span><br><span class="line">    </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">build</span>(<span class="params">self, input_shape</span>):</span></span><br><span class="line">        <span class="built_in">print</span>(input_shape) <span class="comment"># 输出结果为(None, 6)，因为call()函数中分开传入了多个输入</span></span><br><span class="line">        shape1 = input_shape[<span class="number">0</span>][<span class="number">1</span>]</span><br><span class="line">        shape2 = input_shape[<span class="number">1</span>][<span class="number">1</span>]</span><br><span class="line">        </span><br><span class="line">        self.w1 = self.add_weight(shape=(shape1, <span class="number">1</span>))</span><br><span class="line">        self.w2 = self.add_weight(shape=(shape2, <span class="number">1</span>))</span><br><span class="line">        </span><br><span class="line">    <span class="function"><span class="keyword">def</span> <span class="title">call</span>(<span class="params">self, x1, x2</span>):</span> <span class="comment"># 这里分别输入，得不到正确结果</span></span><br><span class="line">        <span class="keyword">return</span> tf.add(tf.matmul(x1, self.w1), tf.matmul(x2, self.w2))</span><br><span class="line"></span><br><span class="line">inputs1 = Input((<span class="number">6</span>))</span><br><span class="line">inputs2 = Input((<span class="number">3</span>))</span><br><span class="line"></span><br><span class="line">outputs = myLayer()(inputs1, inputs2)</span><br><span class="line"></span><br><span class="line">model = Model(inputs=[inputs1, inputs2], outputs=outputs)</span><br><span class="line">model.<span class="built_in">compile</span>(loss=tf.keras.losses.binary_crossentropy)</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>Tensorflow</category>
-      </categories>
-      <tags>
-        <tag>Tensorflow</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>post</title>
-    <url>/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/</url>
-    <content><![CDATA[<p><code>keras</code>中<code>model.predict(x)</code>与<code>model(x)</code>有什么区别？</p>
-<p><a href="https://stackoverflow.com/questions/60837962/confusion-about-keras-model-call-vs-call-vs-predict-methods">StackOverflow传送门</a></p>
-<img src="/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/01.png" class="">
-<span id="more"></span>
-<p>总结：</p>
-<ol>
-<li>最大的区别在于：<code>predict</code>是通过<code>batch</code>读取数据集分批次预测的，而<code>call</code>方法是一次性加载所有的数据。所以，在小数据集上<code>call</code>方法会更快</li>
-<li>如果想要通过预测结果计算梯度，只能用<code>call</code>方法，不能用<code>predict</code>方法，因为<code>predict</code>方法计算过程不会记录到梯度带上。也就是说，如果你想自定义训练过程，必须通过<code>model(x)</code>获取前向传播值，然后再根据输出反向传播计算梯度。</li>
-<li><code>predict</code>与<code>call</code>方法返回的数据类型不一样。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>Tensorflow</category>
-      </categories>
-      <tags>
-        <tag>Tensorflow</tag>
       </tags>
   </entry>
 </search>

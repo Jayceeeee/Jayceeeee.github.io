@@ -163,6 +163,104 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/11/08/Step-by-Step%E5%AE%9E%E7%8E%B0%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Transformer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/personal.jpeg">
+      <meta itemprop="name" content="David Liu">
+      <meta itemprop="description" content="AI engineer">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="TianduAI">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/11/08/Step-by-Step%E5%AE%9E%E7%8E%B0%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Transformer/" class="post-title-link" itemprop="url">Step by Step实现推荐系统中的Transformer</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-08 21:19:02" itemprop="dateCreated datePublished" datetime="2022-11-08T21:19:02+08:00">2022-11-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-11-10 21:02:35" itemprop="dateModified" datetime="2022-11-10T21:02:35+08:00">2022-11-10</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%A8%E6%88%B7%E8%A1%8C%E4%B8%BA%E5%BA%8F%E5%88%97/" itemprop="url" rel="index"><span itemprop="name">用户行为序列</span></a>
+                </span>
+            </span>
+
+          <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>724</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>用户行为序列的处理方式有很多，从原始的<code>pooling</code>类，如<code>average pooling</code>、<code>weighted average pooling</code>等，到<code>Attention</code>类，如<code>DIN</code>中的处理模式等，到<code>Sequence</code>类，如<code>DIEN</code>中的<code>GRU</code>等。<code>Transformer</code>一出生就大放异彩，而用户行为序列天然就适用于<code>Transformer</code>等这种序列模型，于是<code>Transformer</code>在用户行为序列中被广泛使用。本文，从0开始构建适用于推荐系统的<code>Transformer Layer</code>，会设计到其中的各种细节，并辅以代码详细讲解。</p>
+<p><code>Transformer</code>的经典结构图如下所示：<br><img src="/2022/11/08/Step-by-Step%E5%AE%9E%E7%8E%B0%E6%8E%A8%E8%8D%90%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84Transformer/01.png" class=""></p>
+<p><strong>首先明确一点，推荐系统中的<code>Transformer Layer</code>只有上图左半部分，即<code>Encoder</code>，<code>Decoder</code>是不参与的。</strong> 实现<code>Transformer Layer</code>，可以将其拆解为以下几个步骤实现：</p>
+<ul>
+<li><code>Positional Embedding</code></li>
+<li><code>Self Attention</code></li>
+<li><code>Multi-head Attention</code></li>
+<li><code>Feed-forward Network</code></li>
+</ul>
+<p>下面我们逐一进行实现，<code>Action!</code></p>
+<h2 id="Positional-Embedding"><a href="#Positional-Embedding" class="headerlink" title="Positional Embedding"></a>Positional Embedding</h2><p>什么是<code>Positional Embedding</code>？为什么需要它？简而言之，就是<code>Self Attention</code>的计算过程中没有考虑<code>item</code>在行为序列中的位次信息，所以需要增加与位置相关的<code>Positional Embedding</code>，以引入位次信息，其具体表现形式就是一个矩阵，其中的每个元素均与<code>item</code>在序列中的位次相关。想要更详细的了解<code>Positional Embedding</code>，可以阅读<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338592312">《一文教你彻底理解Transformer中Positional Encoding》</a>。在《Attention is all you need》</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://example.com/2022/10/14/keras%E4%B8%ADmodel.predict(x)%E4%B8%8Emodel(x)%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -990,100 +1088,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/personal.jpeg">
-      <meta itemprop="name" content="David Liu">
-      <meta itemprop="description" content="AI engineer">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="TianduAI">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/" class="post-title-link" itemprop="url">Tensorflow实现cosine similarity</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-              
-
-              <time title="创建时间：2022-01-08 22:39:20 / 修改时间：23:13:03" itemprop="dateCreated datePublished" datetime="2022-01-08T22:39:20+08:00">2022-01-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Tensorflow/" itemprop="url" rel="index"><span itemprop="name">Tensorflow</span></a>
-                </span>
-            </span>
-
-          <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>1.8k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>5 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <blockquote>
-<p>一种简单优雅的实现方法</p>
-</blockquote>
-<h4 id="余弦相似度计算公式"><a href="#余弦相似度计算公式" class="headerlink" title="余弦相似度计算公式"></a>余弦相似度计算公式</h4><p>$ cos(\vec x,\vec y)=\frac{&lt;\vec x,\vec y&gt;}{|\vec x| |\vec y|} $</p>
-<h4 id="最直观实现方式"><a href="#最直观实现方式" class="headerlink" title="最直观实现方式"></a>最直观实现方式</h4><p>设<code>user_side_representation</code>与<code>item_side_representation</code>的<code>shape=[None, 4]</code>，其中<code>None</code>表示<code>batch_size</code>，4表示<code>embedding_size</code>。</p>
-<p>计算<code>user_side_representation</code>与<code>item_side_representation</code>两者的<code>cosine similarity</code>最直观的实现方式为：<br>1）求<code>user_side_representation</code>与<code>item_side_representation</code>的内积<code>inner_product</code>;<br>2）分别计算<code>user_side_representation</code>与<code>item_side_representation</code>的<code>L2-norm</code>，<code>norm_user</code>与<code>norm_item</code>;<br>3）计算<code>inner_product / (norm_user*norm_item)</code></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/01/08/Tensorflow%E5%AE%9E%E7%8E%B0cosine%20similarity/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1155,14 +1159,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-count">13</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-count">9</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
@@ -1215,12 +1219,12 @@
     <span class="post-meta-item-icon">
       <i class="fa fa-chart-area"></i>
     </span>
-    <span title="站点总字数">19k</span>
+    <span title="站点总字数">20k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
-    <span title="站点阅读时长">48 分钟</span>
+    <span title="站点阅读时长">50 分钟</span>
 </div>
 
 <div>
